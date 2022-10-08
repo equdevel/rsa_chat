@@ -37,7 +37,7 @@ def connect_button_clicked():
         # raise SystemExit(error)
         history_box.insert(END, error.strerror + '\n')
     else:
-        history_box.insert(END, 'Connected to %s:%i\n' % (host, port))
+        history_box.insert(END, 'Connected to %s:%i as %s\n' % (host, port, my_nickname))
         s.send(rsa.encrypt(my_nickname.encode('utf8'), server_pubkey))
         _thread.start_new_thread(receive_message, ())
 
@@ -53,6 +53,7 @@ def send_button_clicked():
 def ctrl_return_pressed(event):
     print(event)
     send_button_clicked()
+
 
 root = Tk()
 root.title('RSA_chat 1.0')

@@ -54,6 +54,7 @@ def ctrl_return_pressed(event):
     print(event)
     send_button_clicked()
 
+
 root = Tk()
 root.title('RSA_chat 1.0')
 root.minsize(800, 600)
