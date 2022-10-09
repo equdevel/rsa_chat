@@ -26,7 +26,7 @@ except ConnectionRefusedError as error:
     s.close()
     raise SystemExit(error)
 else:
-    print('Connected to %s:%i' % (host, port))
+    print('Connected to %s:%i as %s\n' % (host, port, my_nickname))
 
 s.send(rsa.encrypt(my_nickname.encode('utf8'), server_pubkey))
 
