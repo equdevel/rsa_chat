@@ -9,7 +9,6 @@ from tkinter import *
 host = '127.0.0.1'
 port = 9999
 my_nickname = 'user_two'
-opponent_nickname = 'user_one'
 
 with open('keys/private.key') as f:
     privkey = rsa.PrivateKey.load_pkcs1(f.read())
@@ -17,7 +16,7 @@ with open('keys/private.key') as f:
 with open('keys/server_public.key') as f:
     server_pubkey = rsa.PublicKey.load_pkcs1(f.read())
 
-with open('keys/%s_public.key' % opponent_nickname) as f:
+with open('keys/user_three_public.key') as f:
     opponent_pubkey = rsa.PublicKey.load_pkcs1(f.read())
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -25,6 +24,7 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 def receive_message():
     while True:
+        opponent_nickname = rsa.decrypt(s.recv(1024), privkey).decode('utf8')
         message = rsa.decrypt(s.recv(1024), privkey).decode('utf8')
         history_box.insert(END, '[{:%d.%m.%Y %H:%M:%S}] <{}> {}\n'.format(datetime.now(), opponent_nickname, message))
 
@@ -33,11 +33,9 @@ def connect_button_clicked():
     try:
         s.connect((host, port))
     except ConnectionRefusedError as error:
-        # s.close()
-        # raise SystemExit(error)
         history_box.insert(END, error.strerror + '\n')
     else:
-        history_box.insert(END, 'Connected to %s:%i as %s\n' % (host, port, my_nickname))
+        history_box.insert(END, 'CONNECTED to %s:%i as %s\n' % (host, port, my_nickname))
         s.send(rsa.encrypt(my_nickname.encode('utf8'), server_pubkey))
         _thread.start_new_thread(receive_message, ())
 
@@ -46,7 +44,7 @@ def send_button_clicked():
     msg = message_box.get()  # message_box.get('0.0', END)
     history_box.insert(END, '[{:%d.%m.%Y %H:%M:%S}] <{}> {}\n'.format(datetime.now(), my_nickname, msg))
     message_box.delete(0, END)  # message_box.delete('0.0', END)
-    s.send(rsa.encrypt(opponent_nickname.encode('utf8'), server_pubkey))
+    s.send(rsa.encrypt('user_three'.encode('utf8'), server_pubkey))
     s.send(rsa.encrypt(msg.encode('utf8'), opponent_pubkey))
 
 
