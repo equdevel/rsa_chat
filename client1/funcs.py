@@ -12,21 +12,16 @@ def load_pubkey(name):
         return rsa.PublicKey.load_pkcs1(f.read())
 
 
-def load_keys(nickname, clients_count, mode):
+def load_keys(nickname, clients_count):
     privkey = load_privkey(nickname)
-    client_pubkey = {}
+    pubkey = {}
+    if nickname != 'server':
+        pubkey['server'] = load_pubkey('server')
     for i in range(1, clients_count + 1):
         if f'client{i}' == nickname:
             continue
-        client_pubkey[f'client{i}'] = load_pubkey(f'client{i}')
-    match mode:
-        case 'client':
-            server_pubkey = load_pubkey('server')
-            return privkey, server_pubkey, client_pubkey
-        case 'server':
-            return privkey, client_pubkey
-        case _:
-            return None
+        pubkey[f'client{i}'] = load_pubkey(f'client{i}')
+    return privkey, pubkey
 
 
 def dt_now():

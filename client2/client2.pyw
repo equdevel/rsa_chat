@@ -31,11 +31,23 @@ def connect_button_clicked():
 
 
 def send_button_clicked():
-    msg = message_box.get()  # message_box.get('0.0', END)
-    history_box.insert(END, f'[{dt_now()}] <{NICKNAME}> {msg}\n')
-    message_box.delete(0, END)  # message_box.delete('0.0', END)
-    s.send(rsa.encrypt('client3'.encode('utf8'), server_pubkey))
-    s.send(rsa.encrypt(msg.encode('utf8'), client_pubkey['client3']))
+    global opponent_nickname
+    data = message_box.get()  # message_box.get('0.0', END)
+    match data.split():
+        case['/quit' | '/exit']:
+            s.close()
+            print(f'{dt_now()} DISCONNECTED')
+            history_box.insert(END, f'{dt_now()} {data}\n{dt_now()} DISCONNECTED\n')
+            message_box.delete(0, END)
+        case ['/opponent', nickname]:
+            opponent_nickname = nickname
+            history_box.insert(END, f'{dt_now()} {data}\n{dt_now()} OPPONENT SET TO <{opponent_nickname}>\n')
+            message_box.delete(0, END)
+        case _:
+            history_box.insert(END, f'{dt_now()} <{NICKNAME}> {data}\n')
+            message_box.delete(0, END)  # message_box.delete('0.0', END)
+            s.send(rsa.encrypt(opponent_nickname.encode('utf8'), server_pubkey))
+            s.send(rsa.encrypt(data.encode('utf8'), client_pubkey[opponent_nickname]))
 
 
 def ctrl_return_pressed(event):
@@ -43,6 +55,7 @@ def ctrl_return_pressed(event):
     send_button_clicked()
 
 
+opponent_nickname = None
 client_pubkey = {}
 
 print(f'{dt_now()} LOADING KEYS...', end='')
@@ -78,4 +91,5 @@ message_box.pack(side=TOP)
 message_box.focus()
 connect_button.pack(side=LEFT)
 send_button.pack(side=RIGHT)
+connect_button_clicked()
 root.mainloop()

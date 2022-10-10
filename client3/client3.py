@@ -3,7 +3,7 @@
 import socket
 import _thread
 import rsa
-from funcs import dt_now, load_privkey, load_pubkey
+from funcs import dt_now, load_privkey, load_pubkey, load_keys
 
 HOST = '127.0.0.1'
 PORT = 9999
@@ -29,12 +29,14 @@ opponent_nickname = None
 client_pubkey = {}
 
 print(f'{dt_now()} LOADING KEYS...', end='')
-privkey = load_privkey(NICKNAME)
-server_pubkey = load_pubkey('server')
-for i in range(1, CLIENTS_COUNT+1):
-    if f'client{i}' == NICKNAME:
-        continue
-    client_pubkey[f'client{i}'] = load_pubkey(f'client{i}')
+privkey, client_pubkey = load_keys(NICKNAME, CLIENTS_COUNT)
+server_pubkey = client_pubkey['server']
+# privkey = load_privkey(NICKNAME)
+# server_pubkey = load_pubkey('server')
+# for i in range(1, CLIENTS_COUNT+1):
+#     if f'client{i}' == NICKNAME:
+#         continue
+#     client_pubkey[f'client{i}'] = load_pubkey(f'client{i}')
 print('OK')
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -51,8 +53,7 @@ _thread.start_new_thread(receive_message, ())
 while True:
     data = input()
     match data.split():
-        case ['/quit']:
-            # s.send(rsa.encrypt(data.encode('utf8'), server_pubkey))
+        case ['/quit' | '/exit']:
             s.close()
             print(f'{dt_now()} DISCONNECTED')
             break

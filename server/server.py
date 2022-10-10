@@ -3,7 +3,7 @@
 import socket
 import _thread
 import rsa
-from funcs import dt_now, load_privkey, load_pubkey
+from funcs import dt_now, load_privkey, load_pubkey, load_keys
 
 HOST = '0.0.0.0'
 PORT = 9999
@@ -41,9 +41,10 @@ clients_online = {}
 client_pubkey = {}
 
 print(f'{dt_now()} LOADING KEYS...', end='')
-server_privkey = load_privkey('server')
-for i in range(1, CLIENTS_COUNT+1):
-    client_pubkey[f'client{i}'] = load_pubkey(f'client{i}')
+server_privkey, client_pubkey = load_keys('server', CLIENTS_COUNT)
+# server_privkey = load_privkey('server')
+# for i in range(1, CLIENTS_COUNT+1):
+#     client_pubkey[f'client{i}'] = load_pubkey(f'client{i}')
 print('OK')
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
