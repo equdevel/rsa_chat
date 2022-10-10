@@ -3,36 +3,11 @@
 import socket
 import _thread
 import rsa
-from datetime import datetime
+from funcs import dt_now, load_privkey, load_pubkey
 
-client_pubkey = {}
-
-with open('keys/server_private.key') as f:
-    server_privkey = rsa.PrivateKey.load_pkcs1(f.read())
-
-with open('keys/user_one_public.key') as f:
-    client_pubkey['user_one'] = rsa.PublicKey.load_pkcs1(f.read())
-
-with open('keys/user_two_public.key') as f:
-    client_pubkey['user_two'] = rsa.PublicKey.load_pkcs1(f.read())
-
-with open('keys/user_three_public.key') as f:
-    client_pubkey['user_three'] = rsa.PublicKey.load_pkcs1(f.read())
-
-
-host = '0.0.0.0'
-port = 9999
-thread_id = []
-clients_online = {}
-
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind((host, port))
-server_socket.listen(5)
-print(f'Serving on {host}:{port}...')
-
-
-def dt_now():
-    return '[{:%d.%m.%Y %H:%M:%S}]'.format(datetime.now())
+HOST = '0.0.0.0'
+PORT = 9999
+CLIENTS_COUNT = 3
 
 
 def forward_message(sender_nickname):
@@ -60,6 +35,21 @@ def forward_message(sender_nickname):
                 sender_socket.send(rsa.encrypt(msg.encode('utf8'), client_pubkey[sender_nickname]))
                 break
 
+
+thread_id = []
+clients_online = {}
+client_pubkey = {}
+
+print(f'{dt_now()} LOADING KEYS...', end='')
+server_privkey = load_privkey('server')
+for i in range(1, CLIENTS_COUNT+1):
+    client_pubkey[f'client{i}'] = load_pubkey(f'client{i}')
+print('OK')
+
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind((HOST, PORT))
+server_socket.listen(5)
+print(f'{dt_now()} SERVING ON {HOST}:{PORT}...')
 
 while True:
     client_socket, client_address = server_socket.accept()

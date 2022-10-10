@@ -3,15 +3,12 @@
 import socket
 import _thread
 import rsa
-from datetime import datetime
+from funcs import dt_now, load_privkey, load_pubkey
 
-host = '127.0.0.1'
-port = 9999
-nickname = 'user_three'
-
-
-def dt_now():
-    return '[{:%d.%m.%Y %H:%M:%S}]'.format(datetime.now())
+HOST = '127.0.0.1'
+PORT = 9999
+NICKNAME = 'client3'
+CLIENTS_COUNT = 3
 
 
 def receive_message():
@@ -28,24 +25,27 @@ def receive_message():
             print(f'{dt_now()} <{opponent_nickname}> {message}')
 
 
-with open('keys/private.key') as f:
-    privkey = rsa.PrivateKey.load_pkcs1(f.read())
+opponent_nickname = None
+client_pubkey = {}
 
-with open('keys/server_public.key') as f:
-    server_pubkey = rsa.PublicKey.load_pkcs1(f.read())
-
-with open('keys/user_one_public.key') as f:
-    opponent_pubkey = rsa.PublicKey.load_pkcs1(f.read())
+print(f'{dt_now()} LOADING KEYS...', end='')
+privkey = load_privkey(NICKNAME)
+server_pubkey = load_pubkey('server')
+for i in range(1, CLIENTS_COUNT+1):
+    if f'client{i}' == NICKNAME:
+        continue
+    client_pubkey[f'client{i}'] = load_pubkey(f'client{i}')
+print('OK')
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
-    s.connect((host, port))
+    s.connect((HOST, PORT))
 except ConnectionRefusedError as error:
     raise SystemExit(f'{dt_now()} NOT CONNECTED: {error.strerror}')
 else:
-    print(f'{dt_now()} CONNECTED to {host}:{port} as <{nickname}>')
+    print(f'{dt_now()} CONNECTED to {HOST}:{PORT} as <{NICKNAME}>')
 
-s.send(rsa.encrypt(nickname.encode('utf8'), server_pubkey))
+s.send(rsa.encrypt(NICKNAME.encode('utf8'), server_pubkey))
 
 _thread.start_new_thread(receive_message, ())
 while True:
@@ -56,7 +56,10 @@ while True:
             s.close()
             print(f'{dt_now()} DISCONNECTED')
             break
-        # case _:
-        case ['/send', nickname, message]:
-            s.send(rsa.encrypt(nickname.encode('utf8'), server_pubkey))
-            s.send(rsa.encrypt(message.encode('utf8'), opponent_pubkey))
+        # case ['/send', nickname, message]:
+        case ['/opponent', nickname]:
+            opponent_nickname = nickname
+            print(f'{dt_now()} OPPONENT SET TO <{opponent_nickname}>')
+        case _:
+            s.send(rsa.encrypt(opponent_nickname.encode('utf8'), server_pubkey))
+            s.send(rsa.encrypt(data.encode('utf8'), client_pubkey[opponent_nickname]))

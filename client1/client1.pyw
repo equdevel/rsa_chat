@@ -3,55 +3,58 @@
 import socket
 import _thread
 import rsa
-from datetime import datetime
+from funcs import dt_now, load_privkey, load_pubkey
 from tkinter import *
 
-host = '127.0.0.1'
-port = 9999
-my_nickname = 'user_one'
-
-with open('keys/private.key') as f:
-    privkey = rsa.PrivateKey.load_pkcs1(f.read())
-
-with open('keys/server_public.key') as f:
-    server_pubkey = rsa.PublicKey.load_pkcs1(f.read())
-
-with open('keys/user_three_public.key') as f:
-    opponent_pubkey = rsa.PublicKey.load_pkcs1(f.read())
-
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+HOST = '127.0.0.1'
+PORT = 9999
+NICKNAME = 'client1'
+CLIENTS_COUNT = 3
 
 
 def receive_message():
     while True:
         opponent_nickname = rsa.decrypt(s.recv(1024), privkey).decode('utf8')
         message = rsa.decrypt(s.recv(1024), privkey).decode('utf8')
-        history_box.insert(END, '[{:%d.%m.%Y %H:%M:%S}] <{}> {}\n'.format(datetime.now(), opponent_nickname, message))
+        history_box.insert(END, f'{dt_now()} <{opponent_nickname}> {message}\n')
 
 
 def connect_button_clicked():
     try:
-        s.connect((host, port))
+        s.connect((HOST, PORT))
     except ConnectionRefusedError as error:
         history_box.insert(END, error.strerror + '\n')
     else:
-        history_box.insert(END, 'CONNECTED to %s:%i as %s\n' % (host, port, my_nickname))
-        s.send(rsa.encrypt(my_nickname.encode('utf8'), server_pubkey))
+        history_box.insert(END, f'{dt_now()} CONNECTED to {HOST}:{PORT} as <{NICKNAME}>\n')
+        s.send(rsa.encrypt(NICKNAME.encode('utf8'), server_pubkey))
         _thread.start_new_thread(receive_message, ())
 
 
 def send_button_clicked():
     msg = message_box.get()  # message_box.get('0.0', END)
-    history_box.insert(END, '[{:%d.%m.%Y %H:%M:%S}] <{}> {}\n'.format(datetime.now(), my_nickname, msg))
+    history_box.insert(END, f'[{dt_now()}] <{NICKNAME}> {msg}\n')
     message_box.delete(0, END)  # message_box.delete('0.0', END)
-    s.send(rsa.encrypt('user_three'.encode('utf8'), server_pubkey))
-    s.send(rsa.encrypt(msg.encode('utf8'), opponent_pubkey))
+    s.send(rsa.encrypt('client3'.encode('utf8'), server_pubkey))
+    s.send(rsa.encrypt(msg.encode('utf8'), client_pubkey['client3']))
 
 
 def ctrl_return_pressed(event):
     print(event)
     send_button_clicked()
 
+
+client_pubkey = {}
+
+print(f'{dt_now()} LOADING KEYS...', end='')
+privkey = load_privkey(NICKNAME)
+server_pubkey = load_pubkey('server')
+for i in range(1, CLIENTS_COUNT+1):
+    if f'client{i}' == NICKNAME:
+        continue
+    client_pubkey[f'client{i}'] = load_pubkey(f'client{i}')
+print('OK')
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 root = Tk()
 root.title('RSA_chat 1.0')
