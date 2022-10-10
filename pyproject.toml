@@ -2,7 +2,7 @@
 name = "rsa-chat"
 version = "0.1.0"
 description = ""
-authors = ["equdevel <bav@tuta.io>"]
+authors = ["equdevel"]
 readme = "README.md"
 packages = [{include = "rsa_chat"}]
 
