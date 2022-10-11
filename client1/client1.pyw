@@ -23,8 +23,8 @@ def receive_message():
         else:
             # rsa.verify(message, signature, pubkey)
             message = receive_encrypted(s, privkey)
-            if sender_nickname == opponent_nickname:
-                history_box.insert(END, f'{dt_now()} <{opponent_nickname}> {message}\n')
+            if sender_nickname in (opponent_nickname, 'SERVER'):
+                history_box.insert(END, f'{dt_now()} <{sender_nickname}> {message}\n')
 
 
 def connect_button_clicked():

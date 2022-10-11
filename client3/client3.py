@@ -22,8 +22,8 @@ def receive_message():
         else:
             # rsa.verify(message, signature, pubkey)
             message = receive_encrypted(s, privkey)
-            if sender_nickname == opponent_nickname:
-                print(f'{dt_now()} <{opponent_nickname}> {message}')
+            if sender_nickname in (opponent_nickname, 'SERVER'):
+                print(f'{dt_now()} <{sender_nickname}> {message}')
 
 
 opponent_nickname = None
