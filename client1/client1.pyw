@@ -2,8 +2,8 @@
 
 import socket
 import _thread
-import rsa
-from funcs import dt_now, load_privkey, load_pubkey, load_keys
+# import rsa
+from funcs import dt_now, load_keys, send_encrypted, receive_encrypted
 from tkinter import *
 
 HOST = '127.0.0.1'
@@ -15,14 +15,14 @@ CLIENTS_COUNT = 3
 def receive_message():
     while True:
         try:
-            sender_nickname = rsa.decrypt(s.recv(1024), privkey).decode('utf8')
+            sender_nickname = receive_encrypted(s, privkey)
         except ConnectionResetError as error:
             s.close()
             history_box.insert(END, f'{dt_now()} DISCONNECTED: {error.strerror}\n')
             break
         else:
             # rsa.verify(message, signature, pubkey)
-            message = rsa.decrypt(s.recv(1024), privkey).decode('utf8')
+            message = receive_encrypted(s, privkey)
             if sender_nickname == opponent_nickname:
                 history_box.insert(END, f'{dt_now()} <{opponent_nickname}> {message}\n')
 
@@ -36,7 +36,7 @@ def connect_button_clicked():
         history_box.insert(END, error.strerror + '\n')
     else:
         history_box.insert(END, f'{dt_now()} CONNECTED to {HOST}:{PORT} as <{NICKNAME}>\n')
-        s.send(rsa.encrypt(NICKNAME.encode('utf8'), server_pubkey))
+        send_encrypted(s, NICKNAME, server_pubkey)
         _thread.start_new_thread(receive_message, ())
 
 
@@ -56,8 +56,8 @@ def send_button_clicked():
         case _:
             history_box.insert(END, f'{dt_now()} <{NICKNAME}> {data}\n')
             message_box.delete(0, END)  # message_box.delete('0.0', END)
-            s.send(rsa.encrypt(opponent_nickname.encode('utf8'), server_pubkey))
-            s.send(rsa.encrypt(data.encode('utf8'), client_pubkey[opponent_nickname]))
+            send_encrypted(s, opponent_nickname, server_pubkey)
+            send_encrypted(s, data, client_pubkey[opponent_nickname])
 
 
 def ctrl_return_pressed(event):
@@ -66,17 +66,11 @@ def ctrl_return_pressed(event):
 
 
 opponent_nickname = None
-client_pubkey = {}
+# client_pubkey = {}
 
 print(f'{dt_now()} LOADING KEYS...', end='')
 privkey, client_pubkey = load_keys(NICKNAME, CLIENTS_COUNT)
 server_pubkey = client_pubkey['server']
-# privkey = load_privkey(NICKNAME)
-# server_pubkey = load_pubkey('server')
-# for i in range(1, CLIENTS_COUNT+1):
-#     if f'client{i}' == NICKNAME:
-#         continue
-#     client_pubkey[f'client{i}'] = load_pubkey(f'client{i}')
 print('OK')
 
 s = None

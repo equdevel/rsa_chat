@@ -30,9 +30,9 @@ def dt_now():
     return '[{:%d.%m.%Y %H:%M:%S}]'.format(datetime.now())
 
 
-def send_encrypted():
-    pass
+def send_encrypted(sock, data, pubkey):
+    sock.send(rsa.encrypt(data.encode('utf8'), pubkey))
 
 
-def receive_encrypted():
-    pass
+def receive_encrypted(sock, privkey):
+    return rsa.decrypt(sock.recv(1024), privkey).decode('utf8')

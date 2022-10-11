@@ -2,8 +2,8 @@
 
 import socket
 import _thread
-import rsa
-from funcs import dt_now, load_privkey, load_pubkey, load_keys
+# import rsa
+from funcs import dt_now, load_keys, send_encrypted, receive_encrypted
 
 HOST = '0.0.0.0'
 PORT = 9999
@@ -14,7 +14,7 @@ def forward_message(sender_nickname):
     while True:
         sender_socket = clients_online[sender_nickname]
         try:
-            receiver_nickname = rsa.decrypt(sender_socket.recv(1024), server_privkey).decode('utf8')
+            receiver_nickname = receive_encrypted(sender_socket, server_privkey)
         except ConnectionResetError as error:
             sender_socket.close()
             del clients_online[sender_nickname]
@@ -24,15 +24,15 @@ def forward_message(sender_nickname):
             if receiver_nickname in clients_online.keys():
                 message = sender_socket.recv(1024)
                 receiver_socket = clients_online[receiver_nickname]
-                receiver_socket.send(rsa.encrypt(sender_nickname.encode('utf8'), client_pubkey[receiver_nickname]))
+                send_encrypted(receiver_socket, sender_nickname, client_pubkey[receiver_nickname])
                 receiver_socket.send(message)
                 print(f'{dt_now()} FORWARD encrypted message from <{sender_nickname}> to <{receiver_nickname}>:')
                 print(message)
             else:
                 msg = f'MESSAGE NOT DELIVERED: <{receiver_nickname}> is offline.'
                 print(f'{dt_now()} {msg}')
-                sender_socket.send(rsa.encrypt('SERVER'.encode('utf8'), client_pubkey[sender_nickname]))
-                sender_socket.send(rsa.encrypt(msg.encode('utf8'), client_pubkey[sender_nickname]))
+                send_encrypted(sender_socket, 'SERVER', client_pubkey[sender_nickname])
+                send_encrypted(sender_socket, msg, client_pubkey[sender_nickname])
                 break
 
 
@@ -54,7 +54,7 @@ print(f'{dt_now()} SERVING ON {HOST}:{PORT}...')
 
 while True:
     client_socket, client_address = server_socket.accept()
-    client_nickname = rsa.decrypt(client_socket.recv(1024), server_privkey).decode('utf8')
+    client_nickname = receive_encrypted(client_socket, server_privkey)
     if client_nickname not in clients_online.keys():
         clients_online[client_nickname] = client_socket
         thread_id.append(_thread.start_new_thread(forward_message, (client_nickname,)))
