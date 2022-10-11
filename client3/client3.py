@@ -14,15 +14,16 @@ CLIENTS_COUNT = 3
 def receive_message():
     while True:
         try:
-            opponent_nickname = rsa.decrypt(s.recv(1024), privkey).decode('utf8')
+            sender_nickname = rsa.decrypt(s.recv(1024), privkey).decode('utf8')
         except ConnectionResetError as error:
             s.close()
             print(f'{dt_now()} DISCONNECTED: {error.strerror}')
             break
         else:
-            # rsa.sign()
+            # rsa.verify(message, signature, pubkey)
             message = rsa.decrypt(s.recv(1024), privkey).decode('utf8')
-            print(f'{dt_now()} <{opponent_nickname}> {message}')
+            if sender_nickname == opponent_nickname:
+                print(f'{dt_now()} <{opponent_nickname}> {message}')
 
 
 opponent_nickname = None
