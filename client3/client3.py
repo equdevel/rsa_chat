@@ -58,7 +58,7 @@ while True:
             print(f'{dt_now()} DISCONNECTED')
             break
         # case ['/send', nickname, message]:
-        case ['/opponent', nickname]:
+        case ['/opponent' | '@', nickname]:
             opponent_nickname = nickname
             print(f'{dt_now()} OPPONENT SET TO <{opponent_nickname}>')
         case _:

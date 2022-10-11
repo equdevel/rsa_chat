@@ -4,12 +4,14 @@ from datetime import datetime
 
 def load_privkey(name):
     with open(f'keys/{name}.key') as f:
-        return rsa.PrivateKey.load_pkcs1(f.read())
+        # return rsa.PrivateKey.load_pkcs1(f.read())
+        return rsa.PrivateKey.load_pkcs1(f.read().encode('utf8'))
 
 
 def load_pubkey(name):
     with open(f'keys/{name}.pub') as f:
-        return rsa.PublicKey.load_pkcs1(f.read())
+        # return rsa.PublicKey.load_pkcs1(f.read())
+        return rsa.PublicKey.load_pkcs1(f.read().encode('utf8'))
 
 
 def load_keys(nickname, clients_count):
@@ -26,3 +28,11 @@ def load_keys(nickname, clients_count):
 
 def dt_now():
     return '[{:%d.%m.%Y %H:%M:%S}]'.format(datetime.now())
+
+
+def send_encrypted():
+    pass
+
+
+def receive_encrypted():
+    pass

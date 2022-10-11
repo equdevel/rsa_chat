@@ -3,7 +3,7 @@
 import socket
 import _thread
 import rsa
-from funcs import dt_now, load_privkey, load_pubkey
+from funcs import dt_now, load_privkey, load_pubkey, load_keys
 from tkinter import *
 
 HOST = '127.0.0.1'
@@ -20,6 +20,8 @@ def receive_message():
 
 
 def connect_button_clicked():
+    global s
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         s.connect((HOST, PORT))
     except ConnectionRefusedError as error:
@@ -39,7 +41,7 @@ def send_button_clicked():
             print(f'{dt_now()} DISCONNECTED')
             history_box.insert(END, f'{dt_now()} {data}\n{dt_now()} DISCONNECTED\n')
             message_box.delete(0, END)
-        case ['/opponent', nickname]:
+        case ['/opponent' | '@', nickname]:
             opponent_nickname = nickname
             history_box.insert(END, f'{dt_now()} {data}\n{dt_now()} OPPONENT SET TO <{opponent_nickname}>\n')
             message_box.delete(0, END)
@@ -59,15 +61,18 @@ opponent_nickname = None
 client_pubkey = {}
 
 print(f'{dt_now()} LOADING KEYS...', end='')
-privkey = load_privkey(NICKNAME)
-server_pubkey = load_pubkey('server')
-for i in range(1, CLIENTS_COUNT+1):
-    if f'client{i}' == NICKNAME:
-        continue
-    client_pubkey[f'client{i}'] = load_pubkey(f'client{i}')
+privkey, client_pubkey = load_keys(NICKNAME, CLIENTS_COUNT)
+server_pubkey = client_pubkey['server']
+# privkey = load_privkey(NICKNAME)
+# server_pubkey = load_pubkey('server')
+# for i in range(1, CLIENTS_COUNT+1):
+#     if f'client{i}' == NICKNAME:
+#         continue
+#     client_pubkey[f'client{i}'] = load_pubkey(f'client{i}')
 print('OK')
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s = None
+# s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 root = Tk()
 root.title('RSA_chat 1.0')
