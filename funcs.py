@@ -18,8 +18,8 @@ def load_pubkey(name):
 def load_keys(nickname, clients_count):
     privkey = load_privkey(nickname)
     pubkey = {}
-    if nickname != 'server':
-        pubkey['server'] = load_pubkey('server')
+    if nickname != 'SERVER':
+        pubkey['SERVER'] = load_pubkey('SERVER')
     for i in range(1, clients_count + 1):
         if f'client{i}' == nickname:
             continue

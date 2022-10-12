@@ -3,7 +3,7 @@
 import socket
 import _thread
 # import rsa
-from funcs import dt_now, load_keys, send_encrypted, receive_encrypted
+from funcs import dt_now, load_keys, send_encrypted, receive_encrypted, encrypt, decrypt, sign, verify, send, receive
 from tkinter import *
 
 HOST = '127.0.0.1'
@@ -21,10 +21,15 @@ def receive_message():
             history_box.insert(END, f'{dt_now()} DISCONNECTED: {error.strerror}\n')
             break
         else:
-            # rsa.verify(message, signature, pubkey)
-            message = receive_encrypted(s, privkey)
-            if sender_nickname in (opponent_nickname, 'SERVER'):
-                history_box.insert(END, f'{dt_now()} <{sender_nickname}> {message}\n')
+            # message = receive_encrypted(s, privkey)
+            data = receive(s)
+            signature = data[:512]
+            message = data[512:]
+            # message = b'X' + message[1:]  # modify encrypted message
+            if verify(message, signature, client_pubkey[sender_nickname]):
+                message = decrypt(message, privkey)
+                if sender_nickname in (opponent_nickname, 'SERVER'):
+                    history_box.insert(END, f'{dt_now()} <{sender_nickname}> {message}\n')
 
 
 def connect_button_clicked():
@@ -63,7 +68,10 @@ def send_button_clicked():
                 history_box.insert(END, f'{dt_now()} <{NICKNAME}> {data}\n')
                 message_box.delete(0, END)  # message_box.delete('0.0', END)
                 send_encrypted(s, opponent_nickname, server_pubkey)
-                send_encrypted(s, data, client_pubkey[opponent_nickname])
+                # send_encrypted(s, data, client_pubkey[opponent_nickname])
+                data = encrypt(data, client_pubkey[opponent_nickname])
+                data = sign(data, privkey) + data
+                send(s, data)
 
 
 def ctrl_return_pressed(event):
@@ -76,7 +84,7 @@ opponent_nickname = None
 
 print(f'{dt_now()} LOADING KEYS...', end='')
 privkey, client_pubkey = load_keys(NICKNAME, CLIENTS_COUNT)
-server_pubkey = client_pubkey['server']
+server_pubkey = client_pubkey['SERVER']
 print('OK')
 
 s = None

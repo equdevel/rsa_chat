@@ -3,7 +3,7 @@
 import socket
 import _thread
 import rsa
-from funcs import dt_now, load_keys, send_encrypted, receive_encrypted
+from funcs import dt_now, load_keys, send_encrypted, receive_encrypted, encrypt, decrypt, sign, verify, send, receive
 
 HOST = '127.0.0.1'
 PORT = 9999
@@ -20,10 +20,14 @@ def receive_message():
             print(f'{dt_now()} DISCONNECTED: {error.strerror}')
             break
         else:
-            # TODO: verify signature of message with sender_pubkey -> rsa.verify(message, signature, sender_pubkey)
-            message = receive_encrypted(s, privkey)
-            if sender_nickname in (opponent_nickname, 'SERVER'):
-                print(f'{dt_now()} <{sender_nickname}> {message}')
+            # message = receive_encrypted(s, privkey)
+            data = receive(s)
+            signature = data[:512]
+            message = data[512:]
+            if verify(message, signature, client_pubkey[sender_nickname]):
+                message = decrypt(message, privkey)
+                if sender_nickname in (opponent_nickname, 'SERVER'):
+                    print(f'{dt_now()} <{sender_nickname}> {message}')
 
 
 opponent_nickname = None
@@ -31,9 +35,9 @@ opponent_nickname = None
 
 print(f'{dt_now()} LOADING KEYS...', end='')
 privkey, client_pubkey = load_keys(NICKNAME, CLIENTS_COUNT)
-server_pubkey = client_pubkey['server']
+server_pubkey = client_pubkey['SERVER']
 # privkey = load_privkey(NICKNAME)
-# server_pubkey = load_pubkey('server')
+# server_pubkey = load_pubkey('SERVER')
 # for i in range(1, CLIENTS_COUNT+1):
 #     if f'client{i}' == NICKNAME:
 #         continue
@@ -70,5 +74,7 @@ while True:
             else:
                 print(f'{dt_now()} <{NICKNAME}> {data}')
                 send_encrypted(s, opponent_nickname, server_pubkey)
-                # TODO: sign message with privkey
-                send_encrypted(s, data, client_pubkey[opponent_nickname])
+                # send_encrypted(s, data, client_pubkey[opponent_nickname])
+                data = encrypt(data, client_pubkey[opponent_nickname])
+                data = sign(data, privkey) + data
+                send(s, data)
