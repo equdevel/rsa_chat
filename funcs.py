@@ -1,4 +1,5 @@
 import rsa
+from rsa import VerificationError
 from datetime import datetime
 
 BUFSIZE = 1024
@@ -30,14 +31,6 @@ def dt_now():
     return '[{:%d.%m.%Y %H:%M:%S}]'.format(datetime.now())
 
 
-def send_encrypted(sock, data, pubkey):
-    sock.send(rsa.encrypt(data.encode('utf8'), pubkey))
-
-
-def receive_encrypted(sock, privkey):
-    return rsa.decrypt(sock.recv(BUFSIZE), privkey).decode('utf8')
-
-
 def encrypt(data, pubkey):
     return rsa.encrypt(data.encode('utf8'), pubkey)
 
@@ -51,7 +44,11 @@ def sign(data, privkey):
 
 
 def verify(data, sig, pubkey):
-    return rsa.verify(data, sig, pubkey) == 'SHA-256'
+    try:
+        res = rsa.verify(data, sig, pubkey) == 'SHA-256'
+    except VerificationError:
+        res = False
+    return res
 
 
 def send(sock, data):
@@ -60,3 +57,11 @@ def send(sock, data):
 
 def receive(sock):
     return sock.recv(BUFSIZE)
+
+
+def send_encrypted(sock, data, pubkey):
+    send(sock, encrypt(data, pubkey))
+
+
+def receive_encrypted(sock, privkey):
+    return decrypt(receive(sock), privkey)
