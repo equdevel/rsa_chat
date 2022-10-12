@@ -33,6 +33,7 @@ def forward_message(sender_nickname):
                 msg = f'MESSAGE NOT DELIVERED: <{receiver_nickname}> is offline.'
                 print(f'{dt_now()} {msg}')
                 send_encrypted(sender_socket, 'SERVER', client_pubkey[sender_nickname])
+                # TODO: sign message from server with server_privkey
                 send_encrypted(sender_socket, msg, client_pubkey[sender_nickname])
 
 

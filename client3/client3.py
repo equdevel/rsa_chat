@@ -15,7 +15,7 @@ def receive_message():
     while True:
         try:
             sender_nickname = receive_encrypted(s, privkey)
-        except ConnectionResetError as error:
+        except (ConnectionResetError, ConnectionAbortedError) as error:
             s.close()
             print(f'{dt_now()} DISCONNECTED: {error.strerror}')
             break
@@ -48,13 +48,12 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
     s.connect((HOST, PORT))
 except ConnectionRefusedError as error:
-    raise SystemExit(f'{dt_now()} NOT CONNECTED: {error.strerror}')
+    exit(f'{dt_now()} NOT CONNECTED: {error.strerror}')  # raise SystemExit(error_message)
 else:
     print(f'{dt_now()} CONNECTED to {HOST}:{PORT} as <{NICKNAME}>')
+    send_encrypted(s, NICKNAME, server_pubkey)
+    _thread.start_new_thread(receive_message, ())
 
-send_encrypted(s, NICKNAME, server_pubkey)
-
-_thread.start_new_thread(receive_message, ())
 while True:
     data = input()
     data_split = data.split()
@@ -73,6 +72,7 @@ while True:
                 print(f'{dt_now()} OPPONENT SET TO <{opponent_nickname}>')
             else:
                 print(f'{dt_now()} <{NICKNAME}> {data}')
+                # TODO: merge signature + receiver_nickname + message into one, and check BUFSIZE
                 send_encrypted(s, opponent_nickname, server_pubkey)
                 # send_encrypted(s, data, client_pubkey[opponent_nickname])
                 data = encrypt(data, client_pubkey[opponent_nickname])

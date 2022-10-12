@@ -16,7 +16,7 @@ def receive_message():
     while True:
         try:
             sender_nickname = receive_encrypted(s, privkey)
-        except ConnectionResetError as error:
+        except (ConnectionResetError, ConnectionAbortedError) as error:
             s.close()
             history_box.insert(END, f'{dt_now()} DISCONNECTED: {error.strerror}\n')
             break
@@ -38,7 +38,7 @@ def connect_button_clicked():
     try:
         s.connect((HOST, PORT))
     except ConnectionRefusedError as error:
-        history_box.insert(END, error.strerror + '\n')
+        history_box.insert(END, f'{dt_now()} NOT CONNECTED: {error.strerror}\n')
     else:
         history_box.insert(END, f'{dt_now()} CONNECTED to {HOST}:{PORT} as <{NICKNAME}>\n')
         send_encrypted(s, NICKNAME, server_pubkey)
@@ -52,8 +52,8 @@ def send_button_clicked():
     match data_split:
         case['/quit' | '/exit']:
             s.close()
-            print(f'{dt_now()} DISCONNECTED')
-            history_box.insert(END, f'{dt_now()} {data}\n{dt_now()} DISCONNECTED\n')
+            print(f'{dt_now()} {data}\n{dt_now()} DISCONNECTED')
+            # history_box.insert(END, f'{dt_now()} {data}\n{dt_now()} DISCONNECTED\n')
             message_box.delete(0, END)
         case ['/opponent', nickname]:
             opponent_nickname = nickname
