@@ -2,7 +2,7 @@
 
 import socket
 import _thread
-# import rsa
+import rsa
 from funcs import dt_now, load_keys, send_encrypted, receive_encrypted
 
 HOST = '127.0.0.1'
@@ -20,7 +20,7 @@ def receive_message():
             print(f'{dt_now()} DISCONNECTED: {error.strerror}')
             break
         else:
-            # rsa.verify(message, signature, pubkey)
+            # TODO: verify signature of message with sender_pubkey -> rsa.verify(message, signature, sender_pubkey)
             message = receive_encrypted(s, privkey)
             if sender_nickname in (opponent_nickname, 'SERVER'):
                 print(f'{dt_now()} <{sender_nickname}> {message}')
@@ -64,10 +64,11 @@ while True:
             opponent_nickname = nickname
             print(f'{dt_now()} OPPONENT SET TO <{opponent_nickname}>')
         case _:
-            if data[0] == '@' and len(data_split) == 1:
+            if data[0] == '@' and len(data_split) == 1:  # data.startswith('@')
                 opponent_nickname = data_split[0][1:]
                 print(f'{dt_now()} OPPONENT SET TO <{opponent_nickname}>')
             else:
                 print(f'{dt_now()} <{NICKNAME}> {data}')
                 send_encrypted(s, opponent_nickname, server_pubkey)
+                # TODO: sign message with privkey
                 send_encrypted(s, data, client_pubkey[opponent_nickname])

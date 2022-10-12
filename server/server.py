@@ -22,6 +22,7 @@ def forward_message(sender_nickname):
             break
         else:
             message = sender_socket.recv(1024)
+            # TODO: verify signature of message with sender_pubkey -> rsa.verify(message, signature, sender_pubkey)
             if receiver_nickname in clients_online.keys():
                 receiver_socket = clients_online[receiver_nickname]
                 send_encrypted(receiver_socket, sender_nickname, client_pubkey[receiver_nickname])
@@ -54,6 +55,7 @@ print(f'{dt_now()} SERVING ON {HOST}:{PORT}...')
 while True:
     client_socket, client_address = server_socket.accept()
     client_nickname = receive_encrypted(client_socket, server_privkey)
+    # TODO: USER EXISTS? -> if client_nickname in client_pubkey.keys():
     if client_nickname not in clients_online.keys():
         clients_online[client_nickname] = client_socket
         thread_id.append(_thread.start_new_thread(forward_message, (client_nickname,)))

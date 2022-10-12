@@ -1,16 +1,16 @@
 import rsa
 from datetime import datetime
 
+BUFSIZE = 1024
+
 
 def load_privkey(name):
     with open(f'keys/{name}.key') as f:
-        # return rsa.PrivateKey.load_pkcs1(f.read())
         return rsa.PrivateKey.load_pkcs1(f.read().encode('utf8'))
 
 
 def load_pubkey(name):
     with open(f'keys/{name}.pub') as f:
-        # return rsa.PublicKey.load_pkcs1(f.read())
         return rsa.PublicKey.load_pkcs1(f.read().encode('utf8'))
 
 
@@ -35,4 +35,28 @@ def send_encrypted(sock, data, pubkey):
 
 
 def receive_encrypted(sock, privkey):
-    return rsa.decrypt(sock.recv(1024), privkey).decode('utf8')
+    return rsa.decrypt(sock.recv(BUFSIZE), privkey).decode('utf8')
+
+
+def encrypt(data, pubkey):
+    return rsa.encrypt(data.encode('utf8'), pubkey)
+
+
+def decrypt(data, privkey):
+    return rsa.decrypt(data, privkey).decode('utf8')
+
+
+def sign(data, privkey):
+    return rsa.sign(data, privkey, 'SHA-256')
+
+
+def verify(data, sig, pubkey):
+    return rsa.verify(data, sig, pubkey) == 'SHA-256'
+
+
+def send(sock, data):
+    sock.send(data)
+
+
+def receive(sock):
+    return sock.recv(BUFSIZE)
