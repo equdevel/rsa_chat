@@ -21,8 +21,8 @@ def forward_message(sender_nickname):
             print(f'{dt_now()} <{sender_nickname}> DISCONNECTED: {error.strerror}')
             break
         else:
+            message = sender_socket.recv(1024)
             if receiver_nickname in clients_online.keys():
-                message = sender_socket.recv(1024)
                 receiver_socket = clients_online[receiver_nickname]
                 send_encrypted(receiver_socket, sender_nickname, client_pubkey[receiver_nickname])
                 receiver_socket.send(message)
@@ -33,7 +33,6 @@ def forward_message(sender_nickname):
                 print(f'{dt_now()} {msg}')
                 send_encrypted(sender_socket, 'SERVER', client_pubkey[sender_nickname])
                 send_encrypted(sender_socket, msg, client_pubkey[sender_nickname])
-                break
 
 
 thread_id = []

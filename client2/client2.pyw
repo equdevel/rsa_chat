@@ -43,21 +43,27 @@ def connect_button_clicked():
 def send_button_clicked():
     global opponent_nickname
     data = message_box.get()  # message_box.get('0.0', END)
-    match data.split():
+    data_split = data.split()
+    match data_split:
         case['/quit' | '/exit']:
             s.close()
             print(f'{dt_now()} DISCONNECTED')
             history_box.insert(END, f'{dt_now()} {data}\n{dt_now()} DISCONNECTED\n')
             message_box.delete(0, END)
-        case ['/opponent' | '@', nickname]:
+        case ['/opponent', nickname]:
             opponent_nickname = nickname
             history_box.insert(END, f'{dt_now()} {data}\n{dt_now()} OPPONENT SET TO <{opponent_nickname}>\n')
             message_box.delete(0, END)
         case _:
-            history_box.insert(END, f'{dt_now()} <{NICKNAME}> {data}\n')
-            message_box.delete(0, END)  # message_box.delete('0.0', END)
-            send_encrypted(s, opponent_nickname, server_pubkey)
-            send_encrypted(s, data, client_pubkey[opponent_nickname])
+            if data[0] == '@' and len(data_split) == 1:
+                opponent_nickname = data_split[0][1:]
+                history_box.insert(END, f'{dt_now()} {data}\n{dt_now()} OPPONENT SET TO <{opponent_nickname}>\n')
+                message_box.delete(0, END)
+            else:
+                history_box.insert(END, f'{dt_now()} <{NICKNAME}> {data}\n')
+                message_box.delete(0, END)  # message_box.delete('0.0', END)
+                send_encrypted(s, opponent_nickname, server_pubkey)
+                send_encrypted(s, data, client_pubkey[opponent_nickname])
 
 
 def ctrl_return_pressed(event):

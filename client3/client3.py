@@ -53,16 +53,21 @@ send_encrypted(s, NICKNAME, server_pubkey)
 _thread.start_new_thread(receive_message, ())
 while True:
     data = input()
-    match data.split():
+    data_split = data.split()
+    match data_split:
         case ['/quit' | '/exit']:
             s.close()
             print(f'{dt_now()} DISCONNECTED')
             break
-        # case ['/send', nickname, message]:
-        case ['/opponent' | '@', nickname]:
+        # case ['/send' | '/out', nickname, message]:
+        case ['/opponent', nickname]:
             opponent_nickname = nickname
             print(f'{dt_now()} OPPONENT SET TO <{opponent_nickname}>')
         case _:
-            print(f'{dt_now()} <{NICKNAME}> {data}')
-            send_encrypted(s, opponent_nickname, server_pubkey)
-            send_encrypted(s, data, client_pubkey[opponent_nickname])
+            if data[0] == '@' and len(data_split) == 1:
+                opponent_nickname = data_split[0][1:]
+                print(f'{dt_now()} OPPONENT SET TO <{opponent_nickname}>')
+            else:
+                print(f'{dt_now()} <{NICKNAME}> {data}')
+                send_encrypted(s, opponent_nickname, server_pubkey)
+                send_encrypted(s, data, client_pubkey[opponent_nickname])
