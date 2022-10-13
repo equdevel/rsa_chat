@@ -12,17 +12,16 @@ NICKNAME = 'client1'
 CLIENTS_COUNT = 3
 
 
-def receive_message():
+def receive_data():
     while True:
         try:
-            sender_nickname = receive_encrypted(s, privkey)
+            sender_nickname = receive_encrypted(sock, privkey)
         except (ConnectionResetError, ConnectionAbortedError) as error:
-            s.close()
+            sock.close()
             history_box.insert(END, f'{dt_now()} DISCONNECTED: {error.strerror}\n')
             break
         else:
-            # message = receive_encrypted(s, privkey)
-            data = receive(s)
+            data = receive(sock)
             signature = data[:512]
             message = data[512:]
             # message = b'X' + message[1:]  # modify encrypted message
@@ -33,16 +32,16 @@ def receive_message():
 
 
 def connect_button_clicked():
-    global s
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    global sock
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        s.connect((HOST, PORT))
+        sock.connect((HOST, PORT))
     except ConnectionRefusedError as error:
         history_box.insert(END, f'{dt_now()} NOT CONNECTED: {error.strerror}\n')
     else:
         history_box.insert(END, f'{dt_now()} CONNECTED to {HOST}:{PORT} as <{NICKNAME}>\n')
-        send_encrypted(s, NICKNAME, server_pubkey)
-        _thread.start_new_thread(receive_message, ())
+        send_encrypted(sock, NICKNAME, server_pubkey)
+        _thread.start_new_thread(receive_data, ())
 
 
 def send_button_clicked():
@@ -51,7 +50,7 @@ def send_button_clicked():
     data_split = data.split()
     match data_split:
         case['/quit' | '/exit']:
-            s.close()
+            sock.close()
             print(f'{dt_now()} {data}\n{dt_now()} DISCONNECTED')
             # history_box.insert(END, f'{dt_now()} {data}\n{dt_now()} DISCONNECTED\n')
             message_box.delete(0, END)
@@ -67,28 +66,23 @@ def send_button_clicked():
             else:
                 history_box.insert(END, f'{dt_now()} <{NICKNAME}> {data}\n')
                 message_box.delete(0, END)  # message_box.delete('0.0', END)
-                send_encrypted(s, opponent_nickname, server_pubkey)
-                # send_encrypted(s, data, client_pubkey[opponent_nickname])
+                send_encrypted(sock, opponent_nickname, server_pubkey)
                 data = encrypt(data, client_pubkey[opponent_nickname])
                 data = sign(data, privkey) + data
-                send(s, data)
+                send(sock, data)
 
 
-def ctrl_return_pressed(event):
+def return_pressed(event):
     print(event)
     send_button_clicked()
 
 
 opponent_nickname = None
-# client_pubkey = {}
 
-print(f'{dt_now()} LOADING KEYS...', end='')
 privkey, client_pubkey = load_keys(NICKNAME, CLIENTS_COUNT)
 server_pubkey = client_pubkey['SERVER']
-print('OK')
 
-s = None
-# s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock = None
 
 root = Tk()
 root.title('RSA_chat 1.0')
@@ -101,7 +95,7 @@ history_box = Text(frame1, width=96, height=33, wrap=WORD)
 history_scrollbar = Scrollbar(frame1, command=history_box.yview)
 history_box['yscrollcommand'] = history_scrollbar.set
 message_box = Entry(frame2, width=98, font='TkFixedFont')  # Text(frame2, width=98, height=2, wrap=WORD)
-message_box.bind('<Return>', ctrl_return_pressed)
+message_box.bind('<Return>', return_pressed)
 connect_button = Button(frame2, text='Connect', width=15, command=connect_button_clicked)
 send_button = Button(frame2, text='Send message', width=15, command=send_button_clicked)
 frame1.pack()

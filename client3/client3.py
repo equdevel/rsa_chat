@@ -11,17 +11,16 @@ NICKNAME = 'client3'
 CLIENTS_COUNT = 3
 
 
-def receive_message():
+def receive_data():
     while True:
         try:
-            sender_nickname = receive_encrypted(s, privkey)
+            sender_nickname = receive_encrypted(sock, privkey)
         except (ConnectionResetError, ConnectionAbortedError) as error:
-            s.close()
+            sock.close()
             print(f'{dt_now()} DISCONNECTED: {error.strerror}')
             break
         else:
-            # message = receive_encrypted(s, privkey)
-            data = receive(s)
+            data = receive(sock)
             signature = data[:512]
             message = data[512:]
             if verify(message, signature, client_pubkey[sender_nickname]):
@@ -31,35 +30,26 @@ def receive_message():
 
 
 opponent_nickname = None
-# client_pubkey = {}
 
-print(f'{dt_now()} LOADING KEYS...', end='')
 privkey, client_pubkey = load_keys(NICKNAME, CLIENTS_COUNT)
 server_pubkey = client_pubkey['SERVER']
-# privkey = load_privkey(NICKNAME)
-# server_pubkey = load_pubkey('SERVER')
-# for i in range(1, CLIENTS_COUNT+1):
-#     if f'client{i}' == NICKNAME:
-#         continue
-#     client_pubkey[f'client{i}'] = load_pubkey(f'client{i}')
-print('OK')
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
-    s.connect((HOST, PORT))
+    sock.connect((HOST, PORT))
 except ConnectionRefusedError as error:
     exit(f'{dt_now()} NOT CONNECTED: {error.strerror}')  # raise SystemExit(error_message)
 else:
     print(f'{dt_now()} CONNECTED to {HOST}:{PORT} as <{NICKNAME}>')
-    send_encrypted(s, NICKNAME, server_pubkey)
-    _thread.start_new_thread(receive_message, ())
+    send_encrypted(sock, NICKNAME, server_pubkey)
+    _thread.start_new_thread(receive_data, ())
 
 while True:
     data = input()
     data_split = data.split()
     match data_split:
         case ['/quit' | '/exit']:
-            s.close()
+            sock.close()
             print(f'{dt_now()} DISCONNECTED')
             break
         # case ['/send' | '/out', nickname, message]:
@@ -73,8 +63,7 @@ while True:
             else:
                 print(f'{dt_now()} <{NICKNAME}> {data}')
                 # TODO: merge signature + receiver_nickname + message into one, and check BUFSIZE
-                send_encrypted(s, opponent_nickname, server_pubkey)
-                # send_encrypted(s, data, client_pubkey[opponent_nickname])
+                send_encrypted(sock, opponent_nickname, server_pubkey)
                 data = encrypt(data, client_pubkey[opponent_nickname])
                 data = sign(data, privkey) + data
-                send(s, data)
+                send(sock, data)

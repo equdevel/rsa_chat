@@ -16,6 +16,7 @@ def load_pubkey(name):
 
 
 def load_keys(nickname, clients_count):
+    print(f'{dt_now()} LOADING KEYS...', end='')
     privkey = load_privkey(nickname)
     pubkey = {}
     if nickname != 'SERVER':
@@ -24,6 +25,7 @@ def load_keys(nickname, clients_count):
         if f'client{i}' == nickname:
             continue
         pubkey[f'client{i}'] = load_pubkey(f'client{i}')
+    print('OK')
     return privkey, pubkey
 
 
