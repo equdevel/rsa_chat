@@ -3,7 +3,7 @@
 import socket
 import _thread
 # import rsa
-from funcs import dt_now, load_keys, send_encrypted, receive_encrypted
+from funcs import dt_now, load_keys, send_encrypted, receive_encrypted, encrypt, decrypt, sign, verify, send, receive
 
 HOST = '0.0.0.0'
 PORT = 9999
@@ -33,8 +33,10 @@ def forward_message(sender_nickname):
                 msg = f'MESSAGE NOT DELIVERED: <{receiver_nickname}> is offline.'
                 print(f'{dt_now()} {msg}')
                 send_encrypted(sender_socket, 'SERVER', client_pubkey[sender_nickname])
-                # TODO: sign message from server with server_privkey
-                send_encrypted(sender_socket, msg, client_pubkey[sender_nickname])
+                # send_encrypted(sender_socket, msg, client_pubkey[sender_nickname])
+                data = encrypt(msg, client_pubkey[sender_nickname])
+                data = sign(data, server_privkey) + data
+                send(sender_socket, data)
 
 
 thread_id = []
