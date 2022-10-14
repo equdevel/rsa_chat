@@ -49,7 +49,11 @@ else:
     send_encrypted(sock, NICKNAME, server_pubkey)
     message = receive(sock).decode('utf8')
     print(f'{dt_now()} {message}')
-    _thread.start_new_thread(receive_data, ())
+    if message == 'CONNECTED':
+        _thread.start_new_thread(receive_data, ())
+    else:
+        sock.close()
+        exit()
 
 while True:
     message = input()

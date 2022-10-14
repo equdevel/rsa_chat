@@ -36,16 +36,19 @@ def receive_data():
 def connect_button_clicked():
     global sock
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    history_box.insert(END, f'{dt_now()} CONNECTING to {HOST}:{PORT} as <{NICKNAME}>...\n')
     try:
         sock.connect((HOST, PORT))
     except ConnectionRefusedError as error:
         history_box.insert(END, f'{dt_now()} NOT CONNECTED: {error.strerror}\n')
     else:
-        history_box.insert(END, f'{dt_now()} CONNECTED to {HOST}:{PORT} as <{NICKNAME}>\n')
         send_encrypted(sock, NICKNAME, server_pubkey)
         message = receive(sock).decode('utf8')
         history_box.insert(END, f'{dt_now()} {message}\n')
-        _thread.start_new_thread(receive_data, ())
+        if message == 'CONNECTED':
+            _thread.start_new_thread(receive_data, ())
+        else:
+            sock.close()
 
 
 def send_button_clicked():
@@ -56,7 +59,6 @@ def send_button_clicked():
         case['/quit' | '/exit']:
             sock.close()
             print(f'{dt_now()} {message}\n{dt_now()} DISCONNECTED')
-            # history_box.insert(END, f'{dt_now()} {data}\n{dt_now()} DISCONNECTED\n')
             message_box.delete(0, END)
         case ['/opponent', nickname]:
             opponent_nickname = nickname
