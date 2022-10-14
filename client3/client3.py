@@ -56,7 +56,7 @@ else:
         exit()
 
 while True:
-    message = input()
+    message = input()[:300]
     message_split = message.split()
     match message_split:
         case ['/quit' | '/exit']:

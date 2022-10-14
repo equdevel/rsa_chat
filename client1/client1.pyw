@@ -53,7 +53,7 @@ def connect_button_clicked():
 
 def send_button_clicked():
     global opponent_nickname
-    message = message_box.get()  # message_box.get('0.0', END)
+    message = message_box.get()[:300]  # message_box.get('0.0', END)
     message_split = message.split()
     match message_split:
         case['/quit' | '/exit']:
