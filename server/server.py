@@ -74,6 +74,6 @@ while True:
             print(f'{dt_now()} {message}')
     else:
         message = f'ACCESS DENIED from {client_address}: <{client_nickname}> not registered'
-        send(client_socket, message)
+        send(client_socket, message.encode('utf8'))
         client_socket.close()
         print(f'{dt_now()} {message}')
