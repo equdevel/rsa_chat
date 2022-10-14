@@ -90,10 +90,10 @@ def return_pressed(event):
     send_button_clicked()
 
 
-print(f'{HOST=}\n{PORT=}\n{NICKNAME=}')
-print(f'{dt_now()} STARTING CLIENT...')
+opponent_nickname = 'client1'
 
-opponent_nickname = NICKNAME
+print(f'{HOST=}\n{PORT=}\n{NICKNAME=}\n{opponent_nickname=}')
+print(f'{dt_now()} STARTING CLIENT...')
 
 privkey, client_pubkey = load_keys(NICKNAME)
 server_pubkey = client_pubkey['SERVER']

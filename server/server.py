@@ -1,9 +1,8 @@
 #!/usr/bin/python3
-
+import queue
 import socket
 import _thread
-
-# import rsa
+from queue import Queue
 from funcs import dt_now, load_keys, send_encrypted, receive_encrypted, encrypt, decrypt, sign, verify, send, receive
 
 HOST = '0.0.0.0'
@@ -26,17 +25,17 @@ def forward_data(sender_nickname):
             message = data[512:1024]
             signature = data[1024:1536]
             if verify(message, signature, client_pubkey[sender_nickname]):
-                # TODO: put message to queue[receiver_nickname], maybe redis-server
+                nickname = encrypt(sender_nickname, client_pubkey[receiver_nickname])
+                data = nickname + message + signature
                 if receiver_nickname in clients_online.keys():
                     receiver_socket = clients_online[receiver_nickname]
-                    nickname = encrypt(sender_nickname, client_pubkey[receiver_nickname])
-                    data = nickname + message + signature
                     send(receiver_socket, data)
                     print(f'{dt_now()} FORWARD encrypted message from <{sender_nickname}> to <{receiver_nickname}>:')
                     print(data)
                 else:
+                    message_queue[receiver_nickname].put(data)
                     nickname = encrypt('SERVER', client_pubkey[sender_nickname])
-                    message = f'MESSAGE NOT DELIVERED: <{receiver_nickname}> is offline.'
+                    message = f'Message from <{sender_nickname}> NOT DELIVERED: <{receiver_nickname}> is offline. Message added to QUEUE.'
                     print(f'{dt_now()} {message}')
                     message = encrypt(message, client_pubkey[sender_nickname])
                     signature = sign(message, server_privkey)
@@ -44,13 +43,26 @@ def forward_data(sender_nickname):
                     send(sender_socket, data)
 
 
+def forward_queue_data(receiver_nickname):
+    queue_ = message_queue[receiver_nickname]
+    while not queue_.empty():
+        receiver_socket = clients_online[receiver_nickname]
+        data = message_queue[receiver_nickname].get()
+        send(receiver_socket, data)
+        print(f'{dt_now()} FORWARD encrypted message from QUEUE to <{receiver_nickname}>:')
+        print(data)
+
+
 print(f'{HOST=}\n{PORT=}')
 print(f'{dt_now()} STARTING SERVER...')
 
 thread_id = []
 clients_online = {}
+message_queue = {}
 
 server_privkey, client_pubkey = load_keys('SERVER')
+for nickname in client_pubkey.keys():
+    message_queue[nickname] = queue.Queue(maxsize=0)
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((HOST, PORT))
@@ -65,6 +77,7 @@ while True:
             clients_online[client_nickname] = client_socket
             message = 'CONNECTED'
             send(client_socket, message.encode('utf8'))
+            forward_queue_data(client_nickname)
             thread_id.append(_thread.start_new_thread(forward_data, (client_nickname,)))
             print(f'{dt_now()} <{client_nickname}> CONNECTED from {client_address}')
         else:
