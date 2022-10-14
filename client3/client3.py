@@ -40,13 +40,15 @@ privkey, client_pubkey = load_keys(NICKNAME, CLIENTS_COUNT)
 server_pubkey = client_pubkey['SERVER']
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+print(f'{dt_now()} CONNECTING to {HOST}:{PORT} as <{NICKNAME}>...')
 try:
     sock.connect((HOST, PORT))
 except ConnectionRefusedError as error:
     exit(f'{dt_now()} NOT CONNECTED: {error.strerror}')  # raise SystemExit(error_message)
 else:
-    print(f'{dt_now()} CONNECTED to {HOST}:{PORT} as <{NICKNAME}>')
     send_encrypted(sock, NICKNAME, server_pubkey)
+    message = receive(sock).decode('utf8')
+    print(f'{dt_now()} {message}')
     _thread.start_new_thread(receive_data, ())
 
 while True:

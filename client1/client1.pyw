@@ -43,6 +43,8 @@ def connect_button_clicked():
     else:
         history_box.insert(END, f'{dt_now()} CONNECTED to {HOST}:{PORT} as <{NICKNAME}>\n')
         send_encrypted(sock, NICKNAME, server_pubkey)
+        message = receive(sock).decode('utf8')
+        history_box.insert(END, f'{dt_now()} {message}\n')
         _thread.start_new_thread(receive_data, ())
 
 

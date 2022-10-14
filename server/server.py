@@ -63,13 +63,17 @@ while True:
     if client_nickname in client_pubkey.keys():
         if client_nickname not in clients_online.keys():
             clients_online[client_nickname] = client_socket
+            message = 'CONNECTED'
+            send(client_socket, message.encode('utf8'))
             thread_id.append(_thread.start_new_thread(forward_data, (client_nickname,)))
             print(f'{dt_now()} <{client_nickname}> CONNECTED from {client_address}')
         else:
+            message = f'ACCESS DENIED from {client_address}: <{client_nickname}> already connected'
+            send(client_socket, message.encode('utf8'))
             client_socket.close()
-            print(f'{dt_now()} ACCESS DENIED from {client_address}: <{client_nickname}> already connected')
-            # TODO: send diag message to client
+            print(f'{dt_now()} {message}')
     else:
+        message = f'ACCESS DENIED from {client_address}: <{client_nickname}> not registered'
+        send(client_socket, message)
         client_socket.close()
-        print(f'{dt_now()} ACCESS DENIED from {client_address}: <{client_nickname}> not registered')
-        # TODO: send diag message to client
+        print(f'{dt_now()} {message}')
