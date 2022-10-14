@@ -8,7 +8,6 @@ from funcs import dt_now, load_keys, send_encrypted, receive_encrypted, encrypt,
 
 HOST = '0.0.0.0'
 PORT = 9999
-CLIENTS_COUNT = 3
 
 
 def forward_data(sender_nickname):
@@ -27,6 +26,7 @@ def forward_data(sender_nickname):
             message = data[512:1024]
             signature = data[1024:1536]
             if verify(message, signature, client_pubkey[sender_nickname]):
+                # TODO: put message to queue[receiver_nickname], maybe redis-server
                 if receiver_nickname in clients_online.keys():
                     receiver_socket = clients_online[receiver_nickname]
                     nickname = encrypt(sender_nickname, client_pubkey[receiver_nickname])
@@ -44,13 +44,13 @@ def forward_data(sender_nickname):
                     send(sender_socket, data)
 
 
-print(f'{HOST=}\n{PORT=}\n{CLIENTS_COUNT=}')
+print(f'{HOST=}\n{PORT=}')
 print(f'{dt_now()} STARTING SERVER...')
 
 thread_id = []
 clients_online = {}
 
-server_privkey, client_pubkey = load_keys('SERVER', CLIENTS_COUNT)
+server_privkey, client_pubkey = load_keys('SERVER')
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((HOST, PORT))
