@@ -2,12 +2,13 @@
 
 import socket
 import _thread
-import rsa
+import os
+import sys
 from funcs import dt_now, load_keys, send_encrypted, receive_encrypted, encrypt, decrypt, sign, verify, send, receive
 
 HOST = '127.0.0.1'
 PORT = 9999
-NICKNAME = 'client3'
+NICKNAME = os.path.basename(sys.argv[0]).split(sep='.', maxsplit=1)[0]
 CLIENTS_COUNT = 3
 
 
@@ -29,6 +30,9 @@ def receive_data():
                 if sender_nickname in (opponent_nickname, 'SERVER'):
                     print(f'{dt_now()} <{sender_nickname}> {message}')
 
+
+print(f'{HOST=}\n{PORT=}\n{NICKNAME=}')
+print(f'{dt_now()} STARTING CLIENT...')
 
 opponent_nickname = None
 

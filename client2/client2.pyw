@@ -2,13 +2,14 @@
 
 import socket
 import _thread
-# import rsa
+import os
+import sys
 from funcs import dt_now, load_keys, send_encrypted, receive_encrypted, encrypt, decrypt, sign, verify, send, receive
 from tkinter import *
 
 HOST = '127.0.0.1'
 PORT = 9999
-NICKNAME = 'client2'
+NICKNAME = os.path.basename(sys.argv[0]).split(sep='.', maxsplit=1)[0]
 CLIENTS_COUNT = 3
 
 
@@ -78,6 +79,9 @@ def return_pressed(event):
     print(event)
     send_button_clicked()
 
+
+print(f'{HOST=}\n{PORT=}\n{NICKNAME=}')
+print(f'{dt_now()} STARTING CLIENT...')
 
 opponent_nickname = None
 

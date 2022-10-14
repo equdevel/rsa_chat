@@ -2,9 +2,9 @@
 
 import socket
 import _thread
+
 # import rsa
-from funcs import dt_now, load_keys, send_encrypted, receive_encrypted, encrypt, decrypt, sign, verify, send, receive, \
-    BUFSIZE
+from funcs import dt_now, load_keys, send_encrypted, receive_encrypted, encrypt, decrypt, sign, verify, send, receive
 
 HOST = '0.0.0.0'
 PORT = 9999
@@ -44,10 +44,13 @@ def forward_data(sender_nickname):
                     send(sender_socket, data)
 
 
+print(f'{HOST=}\n{PORT=}\n{CLIENTS_COUNT=}')
+print(f'{dt_now()} STARTING SERVER...')
+
 thread_id = []
 clients_online = {}
 
-server_privkey, client_pubkey = load_keys('server', CLIENTS_COUNT)
+server_privkey, client_pubkey = load_keys('SERVER', CLIENTS_COUNT)
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((HOST, PORT))
@@ -65,6 +68,8 @@ while True:
         else:
             client_socket.close()
             print(f'{dt_now()} ACCESS DENIED from {client_address}: <{client_nickname}> already connected')
+            # TODO: send diag message to client
     else:
         client_socket.close()
         print(f'{dt_now()} ACCESS DENIED from {client_address}: <{client_nickname}> not registered')
+        # TODO: send diag message to client
