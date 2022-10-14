@@ -10,7 +10,6 @@ from tkinter import *
 HOST = '127.0.0.1'
 PORT = 9999
 NICKNAME = os.path.basename(sys.argv[0]).split(sep='.', maxsplit=1)[0]
-CLIENTS_COUNT = 3
 
 
 def receive_data():
@@ -54,7 +53,7 @@ def connect_button_clicked():
 def send_button_clicked():
     global opponent_nickname
     message = message_box.get()[:300]  # message_box.get('0.0', END)
-    message_split = message.split()
+    message_split = message.split(maxsplit=1)
     match message_split:
         case['/quit' | '/exit']:
             sock.close()
@@ -89,7 +88,7 @@ print(f'{dt_now()} STARTING CLIENT...')
 
 opponent_nickname = None
 
-privkey, client_pubkey = load_keys(NICKNAME, CLIENTS_COUNT)
+privkey, client_pubkey = load_keys(NICKNAME)
 server_pubkey = client_pubkey['SERVER']
 
 sock = None

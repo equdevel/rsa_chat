@@ -9,7 +9,6 @@ from funcs import dt_now, load_keys, send_encrypted, receive_encrypted, encrypt,
 HOST = '127.0.0.1'
 PORT = 9999
 NICKNAME = os.path.basename(sys.argv[0]).split(sep='.', maxsplit=1)[0]
-CLIENTS_COUNT = 3
 
 
 def receive_data():
@@ -36,7 +35,7 @@ print(f'{dt_now()} STARTING CLIENT...')
 
 opponent_nickname = None
 
-privkey, client_pubkey = load_keys(NICKNAME, CLIENTS_COUNT)
+privkey, client_pubkey = load_keys(NICKNAME)
 server_pubkey = client_pubkey['SERVER']
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -57,7 +56,7 @@ else:
 
 while True:
     message = input()[:300]
-    message_split = message.split()
+    message_split = message.split(maxsplit=1)
     match message_split:
         case ['/quit' | '/exit']:
             sock.close()

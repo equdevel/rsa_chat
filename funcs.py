@@ -1,3 +1,4 @@
+import pathlib
 import rsa
 from rsa import VerificationError
 from datetime import datetime
@@ -5,26 +6,24 @@ from datetime import datetime
 BUFSIZE = 1536
 
 
-def load_privkey(name):
-    with open(f'keys/{name}.key') as f:
+def load_privkey(file):
+    with open(file) as f:
         return rsa.PrivateKey.load_pkcs1(f.read().encode('utf8'))
 
 
-def load_pubkey(name):
-    with open(f'keys/{name}.pub') as f:
+def load_pubkey(file):
+    with open(file) as f:
         return rsa.PublicKey.load_pkcs1(f.read().encode('utf8'))
 
 
-def load_keys(nickname, clients_count):
+def load_keys(nickname):
     print(f'{dt_now()} LOADING KEYS...', end='')
-    privkey = load_privkey(nickname)
+    privkey = load_privkey(f'keys/{nickname}.key')
     pubkey = {}
-    if nickname != 'SERVER':
-        pubkey['SERVER'] = load_pubkey('SERVER')
-    for i in range(1, clients_count + 1):
-        if f'client{i}' == nickname:
-            continue
-        pubkey[f'client{i}'] = load_pubkey(f'client{i}')
+    for file in pathlib.Path('keys').glob('*.pub'):
+        file = file.as_posix()
+        nickname = file.removeprefix('keys/').removesuffix('.pub')
+        pubkey[nickname] = load_pubkey(file)
     print('OK')
     return privkey, pubkey
 
