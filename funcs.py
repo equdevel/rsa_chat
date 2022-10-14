@@ -2,7 +2,7 @@ import rsa
 from rsa import VerificationError
 from datetime import datetime
 
-BUFSIZE = 1024
+BUFSIZE = 1536
 
 
 def load_privkey(name):

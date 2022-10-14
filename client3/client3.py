@@ -14,15 +14,16 @@ CLIENTS_COUNT = 3
 def receive_data():
     while True:
         try:
-            sender_nickname = receive_encrypted(sock, privkey)
+            data = receive(sock)
         except (ConnectionResetError, ConnectionAbortedError) as error:
             sock.close()
             print(f'{dt_now()} DISCONNECTED: {error.strerror}')
             break
         else:
-            data = receive(sock)
-            signature = data[:512]
-            message = data[512:]
+            sender_nickname = data[0:512]
+            sender_nickname = decrypt(sender_nickname, privkey)
+            message = data[512:1024]
+            signature = data[1024:1536]
             if verify(message, signature, client_pubkey[sender_nickname]):
                 message = decrypt(message, privkey)
                 if sender_nickname in (opponent_nickname, 'SERVER'):
@@ -45,9 +46,9 @@ else:
     _thread.start_new_thread(receive_data, ())
 
 while True:
-    data = input()
-    data_split = data.split()
-    match data_split:
+    message = input()
+    message_split = message.split()
+    match message_split:
         case ['/quit' | '/exit']:
             sock.close()
             print(f'{dt_now()} DISCONNECTED')
@@ -55,15 +56,15 @@ while True:
         # case ['/send' | '/out', nickname, message]:
         case ['/opponent', nickname]:
             opponent_nickname = nickname
-            print(f'{dt_now()} OPPONENT SET TO <{opponent_nickname}>')
+            print(f'{dt_now()} {message}\n{dt_now()} OPPONENT SET TO <{opponent_nickname}>')
         case _:
-            if data[0] == '@' and len(data_split) == 1:  # data.startswith('@')
-                opponent_nickname = data_split[0][1:]
-                print(f'{dt_now()} OPPONENT SET TO <{opponent_nickname}>')
+            if message[0] == '@' and len(message_split) == 1:  # message.startswith('@') or use regex_spm
+                opponent_nickname = message_split[0][1:]
+                print(f'{dt_now()} {message}\n{dt_now()} OPPONENT SET TO <{opponent_nickname}>')
             else:
-                print(f'{dt_now()} <{NICKNAME}> {data}')
-                # TODO: merge signature + receiver_nickname + message into one, and check BUFSIZE
-                send_encrypted(sock, opponent_nickname, server_pubkey)
-                data = encrypt(data, client_pubkey[opponent_nickname])
-                data = sign(data, privkey) + data
+                print(f'{dt_now()} <{NICKNAME}> {message}')
+                nickname = encrypt(opponent_nickname, server_pubkey)
+                message = encrypt(message, client_pubkey[opponent_nickname])
+                signature = sign(message, privkey)
+                data = nickname + message + signature
                 send(sock, data)

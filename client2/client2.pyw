@@ -15,15 +15,16 @@ CLIENTS_COUNT = 3
 def receive_data():
     while True:
         try:
-            sender_nickname = receive_encrypted(sock, privkey)
+            data = receive(sock)
         except (ConnectionResetError, ConnectionAbortedError) as error:
             sock.close()
             history_box.insert(END, f'{dt_now()} DISCONNECTED: {error.strerror}\n')
             break
         else:
-            data = receive(sock)
-            signature = data[:512]
-            message = data[512:]
+            sender_nickname = data[0:512]
+            sender_nickname = decrypt(sender_nickname, privkey)
+            message = data[512:1024]
+            signature = data[1024:1536]
             # message = b'X' + message[1:]  # modify encrypted message
             if verify(message, signature, client_pubkey[sender_nickname]):
                 message = decrypt(message, privkey)
@@ -46,29 +47,30 @@ def connect_button_clicked():
 
 def send_button_clicked():
     global opponent_nickname
-    data = message_box.get()  # message_box.get('0.0', END)
-    data_split = data.split()
-    match data_split:
+    message = message_box.get()  # message_box.get('0.0', END)
+    message_split = message.split()
+    match message_split:
         case['/quit' | '/exit']:
             sock.close()
-            print(f'{dt_now()} {data}\n{dt_now()} DISCONNECTED')
+            print(f'{dt_now()} {message}\n{dt_now()} DISCONNECTED')
             # history_box.insert(END, f'{dt_now()} {data}\n{dt_now()} DISCONNECTED\n')
             message_box.delete(0, END)
         case ['/opponent', nickname]:
             opponent_nickname = nickname
-            history_box.insert(END, f'{dt_now()} {data}\n{dt_now()} OPPONENT SET TO <{opponent_nickname}>\n')
+            history_box.insert(END, f'{dt_now()} {message}\n{dt_now()} OPPONENT SET TO <{opponent_nickname}>\n')
             message_box.delete(0, END)
         case _:
-            if data[0] == '@' and len(data_split) == 1:
-                opponent_nickname = data_split[0][1:]
-                history_box.insert(END, f'{dt_now()} {data}\n{dt_now()} OPPONENT SET TO <{opponent_nickname}>\n')
+            if message[0] == '@' and len(message_split) == 1:
+                opponent_nickname = message_split[0][1:]
+                history_box.insert(END, f'{dt_now()} {message}\n{dt_now()} OPPONENT SET TO <{opponent_nickname}>\n')
                 message_box.delete(0, END)
             else:
-                history_box.insert(END, f'{dt_now()} <{NICKNAME}> {data}\n')
+                history_box.insert(END, f'{dt_now()} <{NICKNAME}> {message}\n')
                 message_box.delete(0, END)  # message_box.delete('0.0', END)
-                send_encrypted(sock, opponent_nickname, server_pubkey)
-                data = encrypt(data, client_pubkey[opponent_nickname])
-                data = sign(data, privkey) + data
+                nickname = encrypt(opponent_nickname, server_pubkey)
+                message = encrypt(message, client_pubkey[opponent_nickname])
+                signature = sign(message, privkey)
+                data = nickname + message + signature
                 send(sock, data)
 
 

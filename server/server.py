@@ -12,33 +12,36 @@ CLIENTS_COUNT = 3
 
 
 def forward_data(sender_nickname):
+    sender_socket = clients_online[sender_nickname]
     while True:
-        sender_socket = clients_online[sender_nickname]
         try:
-            receiver_nickname = receive_encrypted(sender_socket, server_privkey)
-        except ConnectionResetError as error:
+            data = receive(sender_socket)
+        except (ConnectionResetError, ConnectionAbortedError) as error:
             sender_socket.close()
             del clients_online[sender_nickname]
             print(f'{dt_now()} <{sender_nickname}> DISCONNECTED: {error.strerror}')
             break
         else:
-            data = receive(sender_socket)
-            signature = data[:512]
-            message = data[512:]
+            receiver_nickname = data[0:512]
+            receiver_nickname = decrypt(receiver_nickname, server_privkey)
+            message = data[512:1024]
+            signature = data[1024:1536]
             if verify(message, signature, client_pubkey[sender_nickname]):
                 if receiver_nickname in clients_online.keys():
                     receiver_socket = clients_online[receiver_nickname]
-                    send_encrypted(receiver_socket, sender_nickname, client_pubkey[receiver_nickname])
-                    receiver_socket.send(data)
+                    nickname = encrypt(sender_nickname, client_pubkey[receiver_nickname])
+                    data = nickname + message + signature
+                    send(receiver_socket, data)
                     print(f'{dt_now()} FORWARD encrypted message from <{sender_nickname}> to <{receiver_nickname}>:')
                     print(data)
                 else:
-                    send_encrypted(sender_socket, 'SERVER', client_pubkey[sender_nickname])
-                    data = f'MESSAGE NOT DELIVERED: <{receiver_nickname}> is offline.'
-                    data = encrypt(data, client_pubkey[sender_nickname])
-                    data = sign(data, server_privkey) + data
+                    nickname = encrypt('SERVER', client_pubkey[sender_nickname])
+                    message = f'MESSAGE NOT DELIVERED: <{receiver_nickname}> is offline.'
+                    print(f'{dt_now()} {message}')
+                    message = encrypt(message, client_pubkey[sender_nickname])
+                    signature = sign(message, server_privkey)
+                    data = nickname + message + signature
                     send(sender_socket, data)
-                    print(f'{dt_now()} {data}')
 
 
 thread_id = []
