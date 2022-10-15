@@ -4,7 +4,7 @@ import socket
 import _thread
 import os
 import sys
-from funcs import dt_now, load_keys, send_encrypted, receive_encrypted, encrypt, decrypt, sign, verify, send, receive
+from funcs import dt_now, load_keys, send_encrypted, encrypt, decrypt, sign, verify, send, receive
 from tkinter import *
 
 HOST = '127.0.0.1'
@@ -38,7 +38,7 @@ def connect_button_clicked():
     global sock, connected
     if not connected:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        history_box.insert(END, f'{dt_now()} CONNECTING to {HOST}:{PORT} as <{NICKNAME}>...\n')
+        history_box.insert(END, f'{dt_now()} /connect\n{dt_now()} CONNECTING to {HOST}:{PORT} as <{NICKNAME}>...\n')
         try:
             sock.connect((HOST, PORT))
         except ConnectionRefusedError as error:
@@ -56,9 +56,13 @@ def connect_button_clicked():
 
 
 def disconnect_button_clicked():
+    global connected
     if connected:
-        message_box.insert(END, '/exit')
-        send_button_clicked()
+        sock.close()
+        connected = False
+        history_box.insert(END, f'{dt_now()} /exit\n')
+        print(f'{dt_now()} /exit\n{dt_now()} DISCONNECTED')
+        message_box.delete(0, END)
 
 
 def send_button_clicked():
@@ -67,18 +71,17 @@ def send_button_clicked():
     if connected and len(message) > 0:
         message_split = message.split(maxsplit=1)
         match message_split:
-            case['/quit' | '/exit']:
-                sock.close()
-                connected = False
-                print(f'{dt_now()} {message}\n{dt_now()} DISCONNECTED')
-                message_box.delete(0, END)
+            case ['/connect']:
+                connect_button_clicked()
+            case ['/quit' | '/exit']:
+                disconnect_button_clicked()
             case ['/opponent', nickname]:
                 OPPONENT_NICKNAME = nickname
                 history_box.insert(END, f'{dt_now()} {message}\n{dt_now()} OPPONENT SET TO <{OPPONENT_NICKNAME}>\n')
                 message_box.delete(0, END)
             case _:
                 if message[0] == '@' and len(message_split) == 1:
-                    OPPONENT_NICKNAME = message_split[0][1:]
+                    OPPONENT_NICKNAME = message[1:]
                     history_box.insert(END, f'{dt_now()} {message}\n{dt_now()} OPPONENT SET TO <{OPPONENT_NICKNAME}>\n')
                     message_box.delete(0, END)
                 else:
@@ -95,12 +98,6 @@ def return_pressed(event):
     print(event)
     send_button_clicked()
 
-
-print(f'{HOST=}\n{PORT=}\n{NICKNAME=}\n{OPPONENT_NICKNAME=}')
-print(f'{dt_now()} STARTING CLIENT...')
-
-privkey, client_pubkey = load_keys(NICKNAME)
-server_pubkey = client_pubkey['SERVER']
 
 sock = None
 connected = False
@@ -130,7 +127,11 @@ connect_button.pack(side=LEFT)
 disconnect_button.pack(side=LEFT)
 send_button.pack(side=RIGHT)
 
-history_box.insert(END, f'{HOST=}\n{PORT=}\n{NICKNAME=}\n{OPPONENT_NICKNAME=}\n\n')
+history_box.insert(END, f'{HOST=}\n{PORT=}\n{NICKNAME=}\n{OPPONENT_NICKNAME=}\n\n{dt_now()} STARTING CLIENT...\n')
+history_box.insert(END, f'{dt_now()} LOADING KEYS...')
+privkey, client_pubkey = load_keys(NICKNAME)
+server_pubkey = client_pubkey['SERVER']
+history_box.insert(END, f'OK\n')
 
 connect_button_clicked()
 root.mainloop()
