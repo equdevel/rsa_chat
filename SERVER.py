@@ -1,9 +1,9 @@
 #!/usr/bin/python3
-import queue
+
 import socket
 import _thread
 from queue import Queue
-from funcs import dt_now, load_keys, send_encrypted, receive_encrypted, encrypt, decrypt, sign, verify, send, receive
+from funcs import dt_now, load_keys, receive_encrypted, encrypt, decrypt, sign, verify, send, receive
 
 HOST = '0.0.0.0'
 PORT = 9999
@@ -62,7 +62,7 @@ message_queue = {}
 
 server_privkey, client_pubkey = load_keys('SERVER')
 for nickname in client_pubkey.keys():
-    message_queue[nickname] = queue.Queue(maxsize=0)
+    message_queue[nickname] = Queue(maxsize=0)
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((HOST, PORT))
