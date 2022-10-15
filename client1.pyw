@@ -10,6 +10,7 @@ from tkinter import *
 HOST = '127.0.0.1'
 PORT = 9999
 NICKNAME = os.path.basename(sys.argv[0]).split(sep='.', maxsplit=1)[0]
+opponent_nickname = 'client2'
 
 
 def receive_data():
@@ -89,8 +90,6 @@ def return_pressed(event):
     print(event)
     send_button_clicked()
 
-
-opponent_nickname = 'client2'
 
 print(f'{HOST=}\n{PORT=}\n{NICKNAME=}\n{opponent_nickname=}')
 print(f'{dt_now()} STARTING CLIENT...')
