@@ -55,6 +55,12 @@ def connect_button_clicked():
                 connected = False
 
 
+def disconnect_button_clicked():
+    if connected:
+        message_box.insert(END, '/exit')
+        send_button_clicked()
+
+
 def send_button_clicked():
     global OPPONENT_NICKNAME, connected
     message = message_box.get()[:300]  # message_box.get('0.0', END)
@@ -100,7 +106,7 @@ sock = None
 connected = False
 
 root = Tk()
-root.title('RSA_chat 1.0')
+root.title('RSA_chat 2.0')
 root.minsize(800, 600)
 root.geometry('800x600+500+200')
 root.resizable(width=False, height=False)
@@ -112,6 +118,7 @@ history_box['yscrollcommand'] = history_scrollbar.set
 message_box = Entry(frame2, width=98, font='TkFixedFont')  # Text(frame2, width=98, height=2, wrap=WORD)
 message_box.bind('<Return>', return_pressed)
 connect_button = Button(frame2, text='Connect', width=15, command=connect_button_clicked)
+disconnect_button = Button(frame2, text='Disconnect', width=15, command=disconnect_button_clicked)
 send_button = Button(frame2, text='Send message', width=15, command=send_button_clicked)
 frame1.pack()
 frame2.pack()
@@ -120,6 +127,10 @@ history_scrollbar.pack(side=LEFT, fill=Y)
 message_box.pack(side=TOP)
 message_box.focus()
 connect_button.pack(side=LEFT)
+disconnect_button.pack(side=LEFT)
 send_button.pack(side=RIGHT)
+
+history_box.insert(END, f'{HOST=}\n{PORT=}\n{NICKNAME=}\n{OPPONENT_NICKNAME=}\n\n')
+
 connect_button_clicked()
 root.mainloop()
