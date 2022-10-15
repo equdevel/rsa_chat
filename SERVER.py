@@ -3,10 +3,13 @@
 import socket
 import _thread
 from queue import Queue
+import redis
 from funcs import dt_now, load_keys, receive_encrypted, encrypt, decrypt, sign, verify, send, receive
 
 HOST = '0.0.0.0'
 PORT = 9999
+REDIS_HOST = '192.168.111.44'
+REDIS_PORT = 6379
 
 
 def forward_data(sender_nickname):
@@ -33,7 +36,8 @@ def forward_data(sender_nickname):
                     print(f'{dt_now()} FORWARD encrypted message from <{sender_nickname}> to <{receiver_nickname}>:')
                     print(data)
                 else:
-                    message_queue[receiver_nickname].put(data)
+                    # message_queue[receiver_nickname].put(data)
+                    redis_.lpush(receiver_nickname, data)
                     nickname = encrypt('SERVER', client_pubkey[sender_nickname])
                     message = f'Message from <{sender_nickname}> NOT DELIVERED: <{receiver_nickname}> is offline. Message added to QUEUE.'
                     print(f'{dt_now()} {message}')
@@ -44,10 +48,12 @@ def forward_data(sender_nickname):
 
 
 def forward_queue_data(receiver_nickname):
-    queue_ = message_queue[receiver_nickname]
-    while not queue_.empty():
-        receiver_socket = clients_online[receiver_nickname]
-        data = message_queue[receiver_nickname].get()
+    receiver_socket = clients_online[receiver_nickname]
+    # queue_ = message_queue[receiver_nickname]
+    # while not queue_.empty():
+    while redis_.llen(receiver_nickname) > 0:
+        # data = message_queue[receiver_nickname].get()
+        data = redis_.rpop(receiver_nickname)
         send(receiver_socket, data)
         print(f'{dt_now()} FORWARD encrypted message from QUEUE to <{receiver_nickname}>:')
         print(data)
@@ -58,11 +64,12 @@ print(f'{dt_now()} STARTING SERVER...')
 
 thread_id = []
 clients_online = {}
-message_queue = {}
+# message_queue = {}
+redis_ = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
 
 server_privkey, client_pubkey = load_keys('SERVER')
-for nickname in client_pubkey.keys():
-    message_queue[nickname] = Queue(maxsize=0)
+# for nickname in client_pubkey.keys():
+#     message_queue[nickname] = Queue(maxsize=0)
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((HOST, PORT))

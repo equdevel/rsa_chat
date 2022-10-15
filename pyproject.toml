@@ -9,6 +9,7 @@ packages = [{include = "rsa_chat"}]
 [tool.poetry.dependencies]
 python = "^3.10"
 rsa = "^4.9"
+redis = "^4.3.4"
 
 
 [build-system]
