@@ -10,7 +10,7 @@ from tkinter import *
 HOST = '127.0.0.1'
 PORT = 9999
 NICKNAME = os.path.basename(sys.argv[0]).split(sep='.', maxsplit=1)[0]
-opponent_nickname = 'client1'
+OPPONENT_NICKNAME = 'client1'
 
 
 def receive_data():
@@ -28,10 +28,9 @@ def receive_data():
             sender_nickname = decrypt(sender_nickname, privkey)
             message = data[512:1024]
             signature = data[1024:1536]
-            # message = b'X' + message[1:]  # modify encrypted message
             if verify(message, signature, client_pubkey[sender_nickname]):
                 message = decrypt(message, privkey)
-                if sender_nickname in (opponent_nickname, 'SERVER'):
+                if sender_nickname in (OPPONENT_NICKNAME, 'SERVER'):
                     history_box.insert(END, f'{dt_now()} <{sender_nickname}> {message}\n')
 
 
@@ -57,7 +56,7 @@ def connect_button_clicked():
 
 
 def send_button_clicked():
-    global opponent_nickname, connected
+    global OPPONENT_NICKNAME, connected
     message = message_box.get()[:300]  # message_box.get('0.0', END)
     if connected and len(message) > 0:
         message_split = message.split(maxsplit=1)
@@ -68,19 +67,19 @@ def send_button_clicked():
                 print(f'{dt_now()} {message}\n{dt_now()} DISCONNECTED')
                 message_box.delete(0, END)
             case ['/opponent', nickname]:
-                opponent_nickname = nickname
-                history_box.insert(END, f'{dt_now()} {message}\n{dt_now()} OPPONENT SET TO <{opponent_nickname}>\n')
+                OPPONENT_NICKNAME = nickname
+                history_box.insert(END, f'{dt_now()} {message}\n{dt_now()} OPPONENT SET TO <{OPPONENT_NICKNAME}>\n')
                 message_box.delete(0, END)
             case _:
                 if message[0] == '@' and len(message_split) == 1:
-                    opponent_nickname = message_split[0][1:]
-                    history_box.insert(END, f'{dt_now()} {message}\n{dt_now()} OPPONENT SET TO <{opponent_nickname}>\n')
+                    OPPONENT_NICKNAME = message_split[0][1:]
+                    history_box.insert(END, f'{dt_now()} {message}\n{dt_now()} OPPONENT SET TO <{OPPONENT_NICKNAME}>\n')
                     message_box.delete(0, END)
                 else:
                     history_box.insert(END, f'{dt_now()} <{NICKNAME}> {message}\n')
                     message_box.delete(0, END)  # message_box.delete('0.0', END)
-                    nickname = encrypt(opponent_nickname, server_pubkey)
-                    message = encrypt(message, client_pubkey[opponent_nickname])
+                    nickname = encrypt(OPPONENT_NICKNAME, server_pubkey)
+                    message = encrypt(message, client_pubkey[OPPONENT_NICKNAME])
                     signature = sign(message, privkey)
                     data = nickname + message + signature
                     send(sock, data)
@@ -91,7 +90,7 @@ def return_pressed(event):
     send_button_clicked()
 
 
-print(f'{HOST=}\n{PORT=}\n{NICKNAME=}\n{opponent_nickname=}')
+print(f'{HOST=}\n{PORT=}\n{NICKNAME=}\n{OPPONENT_NICKNAME=}')
 print(f'{dt_now()} STARTING CLIENT...')
 
 privkey, client_pubkey = load_keys(NICKNAME)
