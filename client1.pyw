@@ -165,10 +165,11 @@ send_button.place(relwidth=0.2, relheight=0.08, anchor=SE, relx=1.0, rely=1.0)
 privkey, contact_pubkey = load_keys(NICKNAME)
 server_pubkey = contact_pubkey['SERVER']
 
-for nickname in contact_pubkey.keys():
+for i, nickname in enumerate(contact_pubkey.keys()):
     contacts_listbox.insert(END, nickname)
     contact_history[nickname] = str()
-contacts_listbox.selection_set(0)
+    if nickname == NICKNAME:
+        contacts_listbox.selection_set(i)
 OPPONENT_NICKNAME = contacts_listbox.selection_get()
 
 history_append(f'{HOST=}\n{PORT=}\n{NICKNAME=}\n{OPPONENT_NICKNAME=}\n\n{dt_now()} STARTING CLIENT...\n', NICKNAME)
