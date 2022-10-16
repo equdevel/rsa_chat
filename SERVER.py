@@ -2,7 +2,7 @@
 
 import socket
 import _thread
-from queue import Queue
+# from queue import Queue
 import redis
 from funcs import dt_now, load_keys, receive_encrypted, encrypt, decrypt, sign, verify, send, receive
 

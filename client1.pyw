@@ -67,7 +67,8 @@ def disconnect_button_clicked():
 
 def send_button_clicked():
     global OPPONENT_NICKNAME, connected
-    message = message_box.get()[:300]  # message_box.get('0.0', END)
+    # TODO: send message with all \n, use Ctrl+Enter for send_button_clicked()
+    message = message_box.get('0.0', END)[:-1][:300]  # delete \n at end and limit to 300 symbols
     if connected and len(message) > 0:
         message_split = message.split(maxsplit=1)
         match message_split:
@@ -86,7 +87,7 @@ def send_button_clicked():
                     message_box.delete(0, END)
                 else:
                     history_box.insert(END, f'{dt_now()} <{NICKNAME}> {message}\n')
-                    message_box.delete(0, END)  # message_box.delete('0.0', END)
+                    message_box.delete('0.0', END)
                     nickname = encrypt(OPPONENT_NICKNAME, server_pubkey)
                     message = encrypt(message, client_pubkey[OPPONENT_NICKNAME])
                     signature = sign(message, privkey)
@@ -107,25 +108,32 @@ root.title('RSA_chat 2.0')
 root.minsize(800, 600)
 root.geometry('800x600+500+200')
 root.resizable(width=False, height=False)
-frame1 = Frame(root, bd=5)
-frame2 = Frame(root, bd=5)
-history_box = Text(frame1, width=96, height=33, wrap=WORD)
-history_scrollbar = Scrollbar(frame1, command=history_box.yview)
+
+contacts_listbox = Listbox(root, selectmode=SINGLE)
+contacts_scrollbar = Scrollbar(root, command=contacts_listbox.yview)
+contacts_listbox['yscrollcommand'] = contacts_scrollbar.set
+contacts_listbox.insert(1, OPPONENT_NICKNAME)
+
+history_box = Text(root, wrap=WORD)
+history_scrollbar = Scrollbar(root, command=history_box.yview)
 history_box['yscrollcommand'] = history_scrollbar.set
-message_box = Entry(frame2, width=98, font='TkFixedFont')  # Text(frame2, width=98, height=2, wrap=WORD)
+
+# message_box = Entry(root, width=98, font='TkFixedFont')
+message_box = Text(root, wrap=WORD)
 message_box.bind('<Return>', return_pressed)
-connect_button = Button(frame2, text='Connect', width=15, command=connect_button_clicked)
-disconnect_button = Button(frame2, text='Disconnect', width=15, command=disconnect_button_clicked)
-send_button = Button(frame2, text='Send message', width=15, command=send_button_clicked)
-frame1.pack()
-frame2.pack()
-history_box.pack(side=LEFT)
-history_scrollbar.pack(side=LEFT, fill=Y)
-message_box.pack(side=TOP)
-message_box.focus()
-connect_button.pack(side=LEFT)
-disconnect_button.pack(side=LEFT)
-send_button.pack(side=RIGHT)
+
+connect_button = Button(root, text='Connect', command=connect_button_clicked)
+disconnect_button = Button(root, text='Disconnect', command=disconnect_button_clicked)
+send_button = Button(root, text='Send message', command=send_button_clicked)
+
+contacts_listbox.place(relwidth=0.1, relheight=0.8)
+contacts_scrollbar.place(relwidth=0.02, relheight=0.8, relx=0.1)
+history_box.place(relwidth=0.86, relheight=0.8, relx=0.12)
+history_scrollbar.place(relwidth=0.02, relheight=0.8, anchor=NE, relx=1.0)
+message_box.place(relwidth=1.0, relheight=0.12, rely=0.8)
+connect_button.place(relwidth=0.2, relheight=0.08, anchor=SW, relx=0.0, rely=1.0)
+disconnect_button.place(relwidth=0.2, relheight=0.08, anchor=SW, relx=0.2, rely=1.0)
+send_button.place(relwidth=0.2, relheight=0.08, anchor=SE, relx=1.0, rely=1.0)
 
 history_box.insert(END, f'{HOST=}\n{PORT=}\n{NICKNAME=}\n{OPPONENT_NICKNAME=}\n\n{dt_now()} STARTING CLIENT...\n')
 history_box.insert(END, f'{dt_now()} LOADING KEYS...')
@@ -134,4 +142,5 @@ server_pubkey = client_pubkey['SERVER']
 history_box.insert(END, f'OK\n')
 
 connect_button_clicked()
+message_box.focus()
 root.mainloop()
