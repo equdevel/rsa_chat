@@ -10,7 +10,7 @@ from tkinter import *
 HOST = '127.0.0.1'
 PORT = 9999
 NICKNAME = os.path.basename(sys.argv[0]).split(sep='.', maxsplit=1)[0]
-OPPONENT_NICKNAME = 'client2'
+OPPONENT_NICKNAME = 'client1'
 
 
 def receive_data():
