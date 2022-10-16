@@ -30,23 +30,23 @@ def receive_data():
             signature = data[1024:1536]
             if verify(message, signature, contact_pubkey[sender_nickname]):
                 message = decrypt(message, privkey)
-                if sender_nickname in (OPPONENT_NICKNAME, 'SERVER'):
-                    history_append(f'{dt_now()} <{sender_nickname}> {message}\n', sender_nickname)
+                # if sender_nickname in (OPPONENT_NICKNAME, 'SERVER'):
+                history_append(f'{dt_now()} <{sender_nickname}> {message}\n', sender_nickname)
 
 
 def connect_button_clicked():
     global sock, connected
     if not connected:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        history_append(f'{dt_now()} /connect\n{dt_now()} CONNECTING to {HOST}:{PORT} as <{NICKNAME}>...\n')
+        history_append(f'{dt_now()} /connect\n{dt_now()} CONNECTING to {HOST}:{PORT} as <{NICKNAME}>...\n', NICKNAME)
         try:
             sock.connect((HOST, PORT))
         except ConnectionRefusedError as error:
-            history_append(f'{dt_now()} NOT CONNECTED: {error.strerror}\n')
+            history_append(f'{dt_now()} NOT CONNECTED: {error.strerror}\n', NICKNAME)
         else:
             send_encrypted(sock, NICKNAME, server_pubkey)
             message = receive(sock).decode('utf8')
-            history_append(f'{dt_now()} {message}\n')
+            history_append(f'{dt_now()} {message}\n', 'SERVER')
             if message == 'CONNECTED':
                 _thread.start_new_thread(receive_data, ())
                 connected = True
@@ -61,14 +61,14 @@ def disconnect_button_clicked():
         sock.close()
         connected = False
         history_append(f'{dt_now()} /exit\n')
-        print(f'{dt_now()} /exit\n{dt_now()} DISCONNECTED')
+        print(f'{dt_now()} /exit\n{dt_now()} DISCONNECTED', NICKNAME)
         message_box.delete(0, END)
 
 
 def send_button_clicked():
     global OPPONENT_NICKNAME, connected
     # TODO: send message with all \n, use Ctrl+Enter for send_button_clicked()
-    message = message_box.get('0.0', END)[:-1][:300]  # delete \n at end and limit to 300 symbols
+    message = message_box.get('0.0', END)[:-1][:300]  # delete \n at the end and limit to 300 symbols
     if connected and len(message) > 0:
         message_split = message.split(maxsplit=1)
         match message_split:
@@ -107,17 +107,22 @@ def history_box_refresh(nickname):
 
 def contact_select(event):
     global OPPONENT_NICKNAME
-    # print(event)
+    print(event)
     # print(contacts_listbox.curselection())
     OPPONENT_NICKNAME = contacts_listbox.selection_get()
-    # print(OPPONENT_NICKNAME)
     history_box_refresh(OPPONENT_NICKNAME)
 
 
 def history_append(s, *args):
-    nickname = args[0] if len(args) > 0 else OPPONENT_NICKNAME
-    contact_history[nickname] += s
-    history_box_refresh(nickname)
+    if len(args) == 1:
+        nickname = args[0]
+        contact_history[nickname] += s
+        if nickname == OPPONENT_NICKNAME:
+            history_box_refresh(nickname)
+    else:
+        nickname = OPPONENT_NICKNAME
+        contact_history[nickname] += s
+        history_box_refresh(nickname)
 
 
 sock = None
@@ -166,8 +171,8 @@ for nickname in contact_pubkey.keys():
 contacts_listbox.selection_set(0)
 OPPONENT_NICKNAME = contacts_listbox.selection_get()
 
-history_append(f'{HOST=}\n{PORT=}\n{NICKNAME=}\n{OPPONENT_NICKNAME=}\n\n{dt_now()} STARTING CLIENT...\n')
-history_append(f'{dt_now()} LOADING KEYS...OK\n')
+history_append(f'{HOST=}\n{PORT=}\n{NICKNAME=}\n{OPPONENT_NICKNAME=}\n\n{dt_now()} STARTING CLIENT...\n', NICKNAME)
+history_append(f'{dt_now()} LOADING KEYS...OK\n', NICKNAME)
 
 connect_button_clicked()
 message_box.focus()
