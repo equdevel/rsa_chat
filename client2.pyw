@@ -10,7 +10,8 @@ from tkinter import *
 HOST = '127.0.0.1'
 PORT = 9999
 NICKNAME = os.path.basename(sys.argv[0]).split(sep='.', maxsplit=1)[0]
-# OPPONENT_NICKNAME = None
+SERVER = 'SERVER'
+DIAG = 'DIAG'
 
 
 def receive_data():
@@ -21,7 +22,7 @@ def receive_data():
         except (ConnectionResetError, ConnectionAbortedError) as error:
             sock.close()
             connected = False
-            history_append(f'{dt_now()} DISCONNECTED: {error.strerror}\n')
+            history_append(f'{dt_now()} DISCONNECTED: {error.strerror}\n', DIAG)
             break
         else:
             sender_nickname = data[0:512]
@@ -30,7 +31,7 @@ def receive_data():
             signature = data[1024:1536]
             if verify(message, signature, contact_pubkey[sender_nickname]):
                 message = decrypt(message, privkey)
-                # if sender_nickname in (OPPONENT_NICKNAME, 'SERVER'):
+                # if sender_nickname in (OPPONENT_NICKNAME, SERVER):
                 history_append(f'{dt_now()} <{sender_nickname}> {message}\n', sender_nickname)
 
 
@@ -38,15 +39,15 @@ def connect_button_clicked():
     global sock, connected
     if not connected:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        history_append(f'{dt_now()} /connect\n{dt_now()} CONNECTING to {HOST}:{PORT} as <{NICKNAME}>...\n', NICKNAME)
+        history_append(f'{dt_now()} /connect\n{dt_now()} CONNECTING to {HOST}:{PORT} as <{NICKNAME}>...\n', DIAG)
         try:
             sock.connect((HOST, PORT))
         except ConnectionRefusedError as error:
-            history_append(f'{dt_now()} NOT CONNECTED: {error.strerror}\n', NICKNAME)
+            history_append(f'{dt_now()} NOT CONNECTED: {error.strerror}\n', DIAG)
         else:
             send_encrypted(sock, NICKNAME, server_pubkey)
             message = receive(sock).decode('utf8')
-            history_append(f'{dt_now()} {message}\n', 'SERVER')
+            history_append(f'{dt_now()} {message}\n', DIAG)
             if message == 'CONNECTED':
                 _thread.start_new_thread(receive_data, ())
                 connected = True
@@ -60,9 +61,8 @@ def disconnect_button_clicked():
     if connected:
         sock.close()
         connected = False
-        history_append(f'{dt_now()} /exit\n')
-        print(f'{dt_now()} /exit\n{dt_now()} DISCONNECTED', NICKNAME)
-        message_box.delete(0, END)
+        history_append(f'{dt_now()} /exit\n', DIAG)
+        message_box.delete('0.0', END)
 
 
 def send_button_clicked():
@@ -130,7 +130,7 @@ connected = False
 contact_history = {}
 
 root = Tk()
-root.title('RSA_chat 2.0')
+root.title(f'RSA-chat <{NICKNAME}>')
 root.minsize(800, 600)
 root.geometry('800x600+500+200')
 root.resizable(width=False, height=False)
@@ -163,17 +163,21 @@ disconnect_button.place(relwidth=0.2, relheight=0.08, anchor=SW, relx=0.2, rely=
 send_button.place(relwidth=0.2, relheight=0.08, anchor=SE, relx=1.0, rely=1.0)
 
 privkey, contact_pubkey = load_keys(NICKNAME)
-server_pubkey = contact_pubkey['SERVER']
+server_pubkey = contact_pubkey[SERVER]
 
-for i, nickname in enumerate(contact_pubkey.keys()):
+contact_history[DIAG] = ''
+contacts_listbox.insert(END, DIAG)
+contacts_listbox.selection_set(0)
+OPPONENT_NICKNAME = DIAG
+# OPPONENT_NICKNAME = contacts_listbox.selection_get()
+
+# for i, nickname in enumerate(contact_pubkey.keys()):
+for nickname in contact_pubkey.keys():
+    contact_history[nickname] = ''
     contacts_listbox.insert(END, nickname)
-    contact_history[nickname] = str()
-    if nickname == NICKNAME:
-        contacts_listbox.selection_set(i)
-OPPONENT_NICKNAME = contacts_listbox.selection_get()
 
-history_append(f'{HOST=}\n{PORT=}\n{NICKNAME=}\n{OPPONENT_NICKNAME=}\n\n{dt_now()} STARTING CLIENT...\n', NICKNAME)
-history_append(f'{dt_now()} LOADING KEYS...OK\n', NICKNAME)
+history_append(f'{HOST=}\n{PORT=}\n{NICKNAME=}\n\n{dt_now()} STARTING CLIENT...\n', DIAG)
+history_append(f'{dt_now()} LOADING KEYS...OK\n', DIAG)
 
 connect_button_clicked()
 message_box.focus()
