@@ -167,20 +167,18 @@ send_button.place(relwidth=0.2, relheight=0.08, anchor=SE, relx=1.0, rely=1.0)
 privkey, contact_pubkey = load_keys(NICKNAME)
 server_pubkey = contact_pubkey[SERVER]
 
-contact_history[DIAG] = ''
-contacts_listbox.insert(END, DIAG)
-contacts_listbox.selection_set(0)
-OPPONENT_NICKNAME = DIAG
-# OPPONENT_NICKNAME = contacts_listbox.selection_get()
-
 # for i, nickname in enumerate(contact_pubkey.keys()):
-for nickname in contact_pubkey.keys():
+for nickname in (DIAG, *contact_pubkey.keys()):
     try:
         with open(f'history/{nickname}.txt', mode='r') as f:
             contact_history[nickname] = f.read()
     except FileNotFoundError:
         contact_history[nickname] = ''
     contacts_listbox.insert(END, nickname)
+
+contacts_listbox.selection_set(0)
+OPPONENT_NICKNAME = DIAG
+# OPPONENT_NICKNAME = contacts_listbox.selection_get()
 
 history_append(f'{HOST=}\n{PORT=}\n{NICKNAME=}\n\n{dt_now()} STARTING CLIENT...\n', DIAG)
 history_append(f'{dt_now()} LOADING KEYS...OK\n', DIAG)
