@@ -6,6 +6,7 @@ import os
 import sys
 from funcs import dt_now, load_keys, send_encrypted, encrypt, decrypt, sign, verify, send, receive
 from tkinter import *
+from tkinter import messagebox
 
 HOST = '127.0.0.1'
 PORT = 9999
@@ -127,6 +128,12 @@ def history_append(s, *args):
         f.write(s)
 
 
+def on_closing():
+    # if messagebox.askokcancel("Quit", "Do you want to quit?"):
+    sock.close()
+    root.destroy()
+
+
 sock = None
 connected = False
 contact_history = {}
@@ -185,4 +192,5 @@ history_append(f'{dt_now()} LOADING KEYS...OK\n', DIAG)
 
 connect_button_clicked()
 message_box.focus()
+root.protocol("WM_DELETE_WINDOW", on_closing)
 root.mainloop()
