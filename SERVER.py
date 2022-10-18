@@ -77,7 +77,11 @@ server_socket.listen(5)
 print(f'{dt_now()} SERVING ON {HOST}:{PORT}...')
 
 while True:
-    client_socket, client_address = server_socket.accept()
+    try:
+        client_socket, client_address = server_socket.accept()
+    except KeyboardInterrupt:
+        server_socket.close()
+        exit('\nStopping SERVER...')
     client_nickname = receive_encrypted(client_socket, server_privkey)
     if client_nickname in client_pubkey.keys():
         if client_nickname not in clients_online.keys():
