@@ -123,6 +123,8 @@ def history_append(s, *args):
         nickname = OPPONENT_NICKNAME
         contact_history[nickname] += s
         history_box_refresh(nickname)
+    with open(f'history/{nickname}.txt', mode='a') as f:
+        f.write(s)
 
 
 sock = None
@@ -173,7 +175,11 @@ OPPONENT_NICKNAME = DIAG
 
 # for i, nickname in enumerate(contact_pubkey.keys()):
 for nickname in contact_pubkey.keys():
-    contact_history[nickname] = ''
+    try:
+        with open(f'history/{nickname}.txt', mode='r') as f:
+            contact_history[nickname] = f.read()
+    except FileNotFoundError:
+        contact_history[nickname] = ''
     contacts_listbox.insert(END, nickname)
 
 history_append(f'{HOST=}\n{PORT=}\n{NICKNAME=}\n\n{dt_now()} STARTING CLIENT...\n', DIAG)
