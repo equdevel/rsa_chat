@@ -115,6 +115,7 @@ def contact_select(event):
 
 
 def history_append(s, *args):
+    message_box.delete('0.0', END)
     if len(args) == 1:
         nickname = args[0]
         contact_history[nickname] += s
