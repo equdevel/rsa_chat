@@ -5,8 +5,9 @@ import _thread
 import os
 import sys
 from funcs import dt_now, load_keys, send_encrypted, encrypt, decrypt, sign, verify, send, receive
-from tkinter import *
-from tkinter import messagebox
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, Gdk
 
 HOST = '127.0.0.1'
 PORT = 9999
@@ -16,6 +17,7 @@ DIAG = 'DIAG'
 
 
 def receive_data():
+    """Receive, verify signature and decrypt messages from server"""
     global connected
     while True:
         try:
@@ -24,6 +26,7 @@ def receive_data():
             sock.close()
             connected = False
             history_append(f'{dt_now()} DISCONNECTED: {error.strerror}\n', DIAG)
+            header_bar.props.subtitle = 'DISCONNECTED'
             break
         else:
             sender_nickname = data[0:512]
@@ -32,11 +35,10 @@ def receive_data():
             signature = data[1024:1536]
             if verify(message, signature, contact_pubkey[sender_nickname]):
                 message = decrypt(message, privkey)
-                # if sender_nickname in (OPPONENT_NICKNAME, SERVER):
                 history_append(f'{dt_now()} <{sender_nickname}> {message}\n', sender_nickname)
 
 
-def connect_button_clicked():
+def connect_button_clicked(obj=None):
     global sock, connected
     if not connected:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -44,7 +46,10 @@ def connect_button_clicked():
         try:
             sock.connect((HOST, PORT))
         except ConnectionRefusedError as error:
+            sock.close()
+            connected = False
             history_append(f'{dt_now()} NOT CONNECTED: {error.strerror}\n', DIAG)
+            header_bar.props.subtitle = 'NOT CONNECTED'
         else:
             send_encrypted(sock, NICKNAME, server_pubkey)
             message = receive(sock).decode('utf8')
@@ -52,25 +57,25 @@ def connect_button_clicked():
             if message == 'CONNECTED':
                 _thread.start_new_thread(receive_data, ())
                 connected = True
+                header_bar.props.subtitle = 'CONNECTED'
             else:
                 sock.close()
                 connected = False
 
 
-def disconnect_button_clicked():
+def disconnect_button_clicked(obj=None):
     global connected
     if connected:
         sock.close()
         connected = False
         history_append(f'{dt_now()} /exit\n', DIAG)
-        message_box.delete('0.0', END)
+        message_buffer.set_text('')
 
 
-def send_button_clicked():
+def send_button_clicked(obj=None):
     global OPPONENT_NICKNAME, connected
-    # TODO: send message with all \n, use Ctrl+Enter for send_button_clicked()
-    message = message_box.get('0.0', END)[:-1][:300]  # delete \n at the end and limit to 300 symbols
-    if connected and len(message) > 0:
+    message = message_buffer.get_text(*message_buffer.get_bounds(), False)[:300]  # limit message to 300 symbols
+    if connected and len(message) > 0 and OPPONENT_NICKNAME != DIAG:
         message_split = message.split(maxsplit=1)
         match message_split:
             case ['/connect']:
@@ -80,15 +85,15 @@ def send_button_clicked():
             case ['/opponent', nickname]:
                 OPPONENT_NICKNAME = nickname
                 history_append(f'{dt_now()} {message}\n{dt_now()} OPPONENT SET TO <{OPPONENT_NICKNAME}>\n')
-                message_box.delete(0, END)
+                message_buffer.set_text('')
             case _:
                 if message[0] == '@' and len(message_split) == 1:
                     OPPONENT_NICKNAME = message[1:]
                     history_append(f'{dt_now()} {message}\n{dt_now()} OPPONENT SET TO <{OPPONENT_NICKNAME}>\n')
-                    message_box.delete(0, END)
+                    message_buffer.set_text('')
                 else:
                     history_append(f'{dt_now()} <{NICKNAME}> {message}\n')
-                    message_box.delete('0.0', END)
+                    message_buffer.set_text('')
                     nickname = encrypt(OPPONENT_NICKNAME, server_pubkey)
                     message = encrypt(message, contact_pubkey[OPPONENT_NICKNAME])
                     signature = sign(message, privkey)
@@ -96,102 +101,116 @@ def send_button_clicked():
                     send(sock, data)
 
 
-def ctrl_return_pressed(event):
-    print(event)
-    send_button_clicked()
+def ctrl_enter_pressed(obj, key):
+    if key.hardware_keycode == 13 and key.get_state() == Gdk.ModifierType.CONTROL_MASK:
+        send_button_clicked()
 
 
-def history_box_refresh(nickname):
-    history_box.delete('0.0', END)
-    history_box.insert(END, contact_history[nickname])
-
-
-def contact_select(event):
+def contact_selected(obj, button):
     global OPPONENT_NICKNAME
-    print(event)
-    # print(contacts_listbox.curselection())
-    OPPONENT_NICKNAME = contacts_listbox.selection_get()
-    history_box_refresh(OPPONENT_NICKNAME)
+    OPPONENT_NICKNAME = stack.get_visible_child_name()
+    print(stack.get_visible_child_name())
 
 
 def history_append(s, *args):
-    message_box.delete('0.0', END)
-    if len(args) == 1:
-        nickname = args[0]
-        contact_history[nickname] += s
-        if nickname == OPPONENT_NICKNAME:
-            history_box_refresh(nickname)
-    else:
-        nickname = OPPONENT_NICKNAME
-        contact_history[nickname] += s
-        history_box_refresh(nickname)
+    """Append message to history TextView and history file"""
+    message_buffer.set_text('')
+    nickname = args[0] if len(args) == 1 else OPPONENT_NICKNAME
+    contact_history[nickname].insert(contact_history[nickname].get_bounds()[1], s)
     with open(f'history/{nickname}.txt', mode='a') as f:
         f.write(s)
-
-
-def on_closing():
-    # if messagebox.askokcancel("Quit", "Do you want to quit?"):
-    sock.close()
-    root.destroy()
 
 
 sock = None
 connected = False
 contact_history = {}
 
-root = Tk()
-root.title(f'RSA-chat <{NICKNAME}>')
-root.minsize(800, 600)
-root.geometry('800x600+500+200')
-root.resizable(width=False, height=False)
+"""GUI init"""
+window = Gtk.Window()
+window.set_default_size(800, 600)
+window.set_resizable(False)
+window.set_position(Gtk.WindowPosition.CENTER)
+window.connect('destroy', Gtk.main_quit)
 
-contacts_listbox = Listbox(root, selectmode=SINGLE)
-contacts_scrollbar = Scrollbar(root, command=contacts_listbox.yview)
-contacts_listbox['yscrollcommand'] = contacts_scrollbar.set
-contacts_listbox.bind('<<ListboxSelect>>', contact_select)
+grid = Gtk.Grid()
+window.add(grid)
 
-history_box = Text(root, wrap=WORD)
-history_scrollbar = Scrollbar(root, command=history_box.yview)
-history_box['yscrollcommand'] = history_scrollbar.set
+header_bar = Gtk.HeaderBar()
+header_bar.set_show_close_button(True)
+header_bar.props.title = f'RSA-chat <{NICKNAME}>'
+window.set_titlebar(header_bar)
 
-# message_box = Entry(root, font='TkFixedFont')
-message_box = Text(root, wrap=WORD)
-# message_box.configure()
-message_box.bind('<Control-Return>', ctrl_return_pressed)
+box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+Gtk.StyleContext.add_class(box.get_style_context(), 'linked')
+connect_button = Gtk.Button.new_from_icon_name('gtk-connect', Gtk.IconSize.MENU)
+connect_button.connect('clicked', connect_button_clicked)
+box.add(connect_button)
+disconnect_button = Gtk.Button.new_from_icon_name('gtk-disconnect', Gtk.IconSize.MENU)
+disconnect_button.connect('clicked', disconnect_button_clicked)
+box.add(disconnect_button)
+settings_button = Gtk.Button.new_from_icon_name('gtk-preferences', Gtk.IconSize.MENU)
+box.add(settings_button)
+header_bar.pack_start(box)
 
-connect_button = Button(root, text='Connect', command=connect_button_clicked)
-disconnect_button = Button(root, text='Disconnect', command=disconnect_button_clicked)
-send_button = Button(root, text='Send message', command=send_button_clicked)
+stack = Gtk.Stack()
+stack.set_hexpand(True)
+stack.set_vexpand(True)
+grid.attach(stack, 1, 0, 6, 1)
 
-contacts_listbox.place(relwidth=0.1, relheight=0.8)
-contacts_scrollbar.place(relwidth=0.02, relheight=0.8, relx=0.1)
-history_box.place(relwidth=0.86, relheight=0.8, relx=0.12)
-history_scrollbar.place(relwidth=0.02, relheight=0.8, anchor=NE, relx=1.0)
-message_box.place(relwidth=1.0, relheight=0.12, rely=0.8)
-connect_button.place(relwidth=0.2, relheight=0.08, anchor=SW, relx=0.0, rely=1.0)
-disconnect_button.place(relwidth=0.2, relheight=0.08, anchor=SW, relx=0.2, rely=1.0)
-send_button.place(relwidth=0.2, relheight=0.08, anchor=SE, relx=1.0, rely=1.0)
+contacts_sidebar = Gtk.StackSidebar()
+contacts_sidebar.set_stack(stack)
+contacts_sidebar.set_size_request(120, 0)
+contacts_sidebar.connect('button-release-event', contact_selected)
+grid.attach(contacts_sidebar, 0, 0, 1, 3)
 
+separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+grid.attach(separator, 1, 1, 6, 1)
+
+message_buffer = Gtk.TextBuffer()
+message_textview = Gtk.TextView(buffer=message_buffer)
+message_textview.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+message_textview.set_size_request(560, 55)
+message_textview.set_border_width(3)
+message_textview.connect('key-press-event', ctrl_enter_pressed)
+grid.attach(message_textview, 1, 2, 5, 1)
+
+send_button = Gtk.Button.new_from_icon_name('gtk-ok', Gtk.IconSize.BUTTON)
+send_button.set_border_width(3)
+send_button.set_size_request(55, 55)
+send_button.connect('clicked', send_button_clicked)
+grid.attach(send_button, 6, 2, 1, 1)
+
+"""Loading keys"""
 privkey, contact_pubkey = load_keys(NICKNAME)
 server_pubkey = contact_pubkey[SERVER]
 
-# for i, nickname in enumerate(contact_pubkey.keys()):
+"""Loading history"""
 for nickname in (DIAG, *contact_pubkey.keys()):
+    contact_history[nickname] = Gtk.TextBuffer()
     try:
         with open(f'history/{nickname}.txt', mode='r') as f:
-            contact_history[nickname] = f.read()
+            contact_history[nickname].set_text(f.read())
     except FileNotFoundError:
-        contact_history[nickname] = ''
-    contacts_listbox.insert(END, nickname)
+        contact_history[nickname].set_text('')
 
-contacts_listbox.selection_set(0)
+    history_textview = Gtk.TextView(buffer=contact_history[nickname])
+    history_textview.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+    history_textview.set_editable(False)
+    history_textview.set_cursor_visible(False)
+    history_textview.set_border_width(3)
+
+    scrolled_window = Gtk.ScrolledWindow()
+    scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+    scrolled_window.add(history_textview)
+
+    stack.add_titled(scrolled_window, nickname, nickname)
+
 OPPONENT_NICKNAME = DIAG
-# OPPONENT_NICKNAME = contacts_listbox.selection_get()
 
-history_append(f'{HOST=}\n{PORT=}\n{NICKNAME=}\n\n{dt_now()} STARTING CLIENT...\n', DIAG)
+history_append(f'{HOST=}\n{PORT=}\n{NICKNAME=}\n{dt_now()} STARTING CLIENT...\n', DIAG)
 history_append(f'{dt_now()} LOADING KEYS...OK\n', DIAG)
 
 connect_button_clicked()
-message_box.focus()
-root.protocol("WM_DELETE_WINDOW", on_closing)
-root.mainloop()
+message_textview.grab_focus()
+window.show_all()
+Gtk.main()
