@@ -23,10 +23,10 @@ def receive_data():
         try:
             data = receive(sock)
         except (ConnectionResetError, ConnectionAbortedError) as error:
-            sock.close()
-            connected = False
             history_append(f'{dt_now()} DISCONNECTED: {error.strerror}\n', DIAG)
             header_bar.props.subtitle = 'DISCONNECTED'
+            connected = False
+            sock.close()
             break
         else:
             sender_nickname = data[0:512]
@@ -47,10 +47,10 @@ def connect_button_clicked(obj=None):
         try:
             sock.connect((HOST, PORT))
         except ConnectionRefusedError as error:
-            sock.close()
-            connected = False
             history_append(f'{dt_now()} NOT CONNECTED: {error.strerror}\n', DIAG)
             header_bar.props.subtitle = 'NOT CONNECTED'
+            connected = False
+            sock.close()
         else:
             send_encrypted(sock, NICKNAME, server_pubkey)
             message = receive(sock).decode('utf8')
@@ -60,18 +60,18 @@ def connect_button_clicked(obj=None):
                 connected = True
                 header_bar.props.subtitle = 'CONNECTED'
             else:
-                sock.close()
                 connected = False
+                sock.close()
 
 
 def disconnect_button_clicked(obj=None):
     global connected
     message_textview.grab_focus()
     if connected:
-        sock.close()
-        connected = False
         history_append(f'{dt_now()} /exit\n', DIAG)
         message_buffer.set_text('')
+        connected = False
+        sock.close()
 
 
 def settings_button_clicked(obj=None):
@@ -91,14 +91,14 @@ def send_button_clicked(obj=None):
                 disconnect_button_clicked()
             case ['/opponent', nickname]:
                 OPPONENT_NICKNAME = nickname
-                history_append(f'{dt_now()} {message}\n{dt_now()} OPPONENT SET TO <{OPPONENT_NICKNAME}>\n')
+                history_append(f'{dt_now()} {message}\n{dt_now()} OPPONENT SET TO <{OPPONENT_NICKNAME}>\n', DIAG)
             case _:
                 if message[0] == '@' and len(message_split) == 1:
                     OPPONENT_NICKNAME = message[1:]
-                    history_append(f'{dt_now()} {message}\n{dt_now()} OPPONENT SET TO <{OPPONENT_NICKNAME}>\n')
+                    history_append(f'{dt_now()} {message}\n{dt_now()} OPPONENT SET TO <{OPPONENT_NICKNAME}>\n', DIAG)
                     message_buffer.set_text('')
                 else:
-                    history_append(f'{dt_now()} <{NICKNAME}> {message}\n')
+                    history_append(f'{dt_now()} <{NICKNAME}> {message}\n', OPPONENT_NICKNAME)
                     nickname = encrypt(OPPONENT_NICKNAME, server_pubkey)
                     message = encrypt(message, contact_pubkey[OPPONENT_NICKNAME])
                     signature = sign(message, privkey)
@@ -118,10 +118,11 @@ def contact_selected(obj, button):
     OPPONENT_NICKNAME = stack.get_visible_child_name()
 
 
-def history_append(s, *args):
+def history_append(s, nickname):
     """Append message to history TextView and history file"""
     message_buffer.set_text('')
-    nickname = args[0] if len(args) == 1 else OPPONENT_NICKNAME
+    if nickname == SERVER:
+        nickname = DIAG
     contact_history[nickname].insert(contact_history[nickname].get_bounds()[1], s)
     with open(f'history_{NICKNAME}/{nickname}.txt', mode='a') as f:
         f.write(s)
