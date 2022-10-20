@@ -117,7 +117,7 @@ def history_append(s, *args):
     message_buffer.set_text('')
     nickname = args[0] if len(args) == 1 else OPPONENT_NICKNAME
     contact_history[nickname].insert(contact_history[nickname].get_bounds()[1], s)
-    with open(f'history/{nickname}.txt', mode='a') as f:
+    with open(f'history_{NICKNAME}/{nickname}.txt', mode='a') as f:
         f.write(s)
 
 
@@ -188,7 +188,7 @@ server_pubkey = contact_pubkey[SERVER]
 for nickname in (DIAG, *contact_pubkey.keys()):
     contact_history[nickname] = Gtk.TextBuffer()
     try:
-        with open(f'history/{nickname}.txt', mode='r') as f:
+        with open(f'history_{NICKNAME}/{nickname}.txt', mode='r') as f:
             contact_history[nickname].set_text(f.read())
     except FileNotFoundError:
         contact_history[nickname].set_text('')
