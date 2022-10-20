@@ -74,8 +74,10 @@ def disconnect_button_clicked(obj=None):
 
 def send_button_clicked(obj=None):
     global OPPONENT_NICKNAME, connected
+    message_textview.grab_focus()
     message = message_buffer.get_text(*message_buffer.get_bounds(), False)[:300]  # limit message to 300 symbols
     if connected and len(message) > 0 and OPPONENT_NICKNAME != DIAG:
+        message_buffer.set_text('')
         message_split = message.split(maxsplit=1)
         match message_split:
             case ['/connect']:
@@ -85,7 +87,6 @@ def send_button_clicked(obj=None):
             case ['/opponent', nickname]:
                 OPPONENT_NICKNAME = nickname
                 history_append(f'{dt_now()} {message}\n{dt_now()} OPPONENT SET TO <{OPPONENT_NICKNAME}>\n')
-                message_buffer.set_text('')
             case _:
                 if message[0] == '@' and len(message_split) == 1:
                     OPPONENT_NICKNAME = message[1:]
@@ -93,7 +94,6 @@ def send_button_clicked(obj=None):
                     message_buffer.set_text('')
                 else:
                     history_append(f'{dt_now()} <{NICKNAME}> {message}\n')
-                    message_buffer.set_text('')
                     nickname = encrypt(OPPONENT_NICKNAME, server_pubkey)
                     message = encrypt(message, contact_pubkey[OPPONENT_NICKNAME])
                     signature = sign(message, privkey)
@@ -109,7 +109,6 @@ def ctrl_enter_pressed(obj, key):
 def contact_selected(obj, button):
     global OPPONENT_NICKNAME
     OPPONENT_NICKNAME = stack.get_visible_child_name()
-    print(stack.get_visible_child_name())
 
 
 def history_append(s, *args):
