@@ -40,6 +40,7 @@ def receive_data():
 
 def connect_button_clicked(obj=None):
     global sock, connected
+    message_textview.grab_focus()
     if not connected:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         history_append(f'{dt_now()} /connect\n{dt_now()} CONNECTING to {HOST}:{PORT} as <{NICKNAME}>...\n', DIAG)
@@ -65,6 +66,7 @@ def connect_button_clicked(obj=None):
 
 def disconnect_button_clicked(obj=None):
     global connected
+    message_textview.grab_focus()
     if connected:
         sock.close()
         connected = False
@@ -72,12 +74,15 @@ def disconnect_button_clicked(obj=None):
         message_buffer.set_text('')
 
 
+def settings_button_clicked(obj=None):
+    message_textview.grab_focus()
+
+
 def send_button_clicked(obj=None):
     global OPPONENT_NICKNAME, connected
     message_textview.grab_focus()
     message = message_buffer.get_text(*message_buffer.get_bounds(), False)[:300]  # limit message to 300 symbols
     if connected and len(message) > 0 and OPPONENT_NICKNAME != DIAG:
-        message_buffer.set_text('')
         message_split = message.split(maxsplit=1)
         match message_split:
             case ['/connect']:
@@ -108,6 +113,8 @@ def ctrl_enter_pressed(obj, key):
 
 def contact_selected(obj, button):
     global OPPONENT_NICKNAME
+    message_textview.grab_focus()
+    message_textview.grab_focus()
     OPPONENT_NICKNAME = stack.get_visible_child_name()
 
 
@@ -148,6 +155,7 @@ disconnect_button = Gtk.Button.new_from_icon_name('gtk-disconnect', Gtk.IconSize
 disconnect_button.connect('clicked', disconnect_button_clicked)
 box.add(disconnect_button)
 settings_button = Gtk.Button.new_from_icon_name('gtk-preferences', Gtk.IconSize.MENU)
+settings_button.connect('clicked', settings_button_clicked)
 box.add(settings_button)
 header_bar.pack_start(box)
 
@@ -197,6 +205,7 @@ for nickname in (DIAG, *contact_pubkey.keys()):
     history_textview.set_editable(False)
     history_textview.set_cursor_visible(False)
     history_textview.set_border_width(3)
+    history_textview.set_can_focus(False)
 
     scrolled_window = Gtk.ScrolledWindow()
     scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
