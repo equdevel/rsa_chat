@@ -76,6 +76,8 @@ def disconnect_button_clicked(obj=None):
 
 def settings_button_clicked(obj=None):
     message_textview.grab_focus()
+    mark = contact_history[OPPONENT_NICKNAME].create_mark(None, contact_history[OPPONENT_NICKNAME].get_end_iter(), False)
+    history_textview[OPPONENT_NICKNAME].scroll_to_mark(mark, 0.0, True, 1.0, 1.0)
 
 
 def send_button_clicked(obj=None):
@@ -124,10 +126,14 @@ def history_append(s, nickname):
     if nickname == SERVER:
         nickname = DIAG
     contact_history[nickname].insert(contact_history[nickname].get_end_iter(), s)
-    mark = contact_history[nickname].create_mark('end_mark', contact_history[nickname].get_end_iter(), False)
+    mark = contact_history[nickname].create_mark(None, contact_history[nickname].get_end_iter(), False)
     history_textview[nickname].scroll_to_mark(mark, 0.0, True, 1.0, 1.0)
     with open(f'history_{NICKNAME}/{nickname}.txt', mode='a') as f:
         f.write(s)
+
+
+def window_show(obj):
+    pass
 
 
 sock = None
@@ -141,6 +147,7 @@ window.set_default_size(800, 600)
 window.set_resizable(False)
 window.set_position(Gtk.WindowPosition.CENTER)
 window.connect('destroy', Gtk.main_quit)
+window.connect('show', window_show)
 
 grid = Gtk.Grid()
 window.add(grid)
@@ -211,12 +218,12 @@ for nickname in (DIAG, *contact_pubkey.keys()):
     history_textview[nickname].set_border_width(3)
     history_textview[nickname].set_can_focus(False)
 
+    mark = contact_history[nickname].create_mark(None, contact_history[nickname].get_end_iter(), False)
+    history_textview[nickname].scroll_to_mark(mark, 0.0, True, 1.0, 1.0)
+
     scrolled_window = Gtk.ScrolledWindow()
     scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
     scrolled_window.add(history_textview[nickname])
-
-    mark = contact_history[nickname].create_mark('end_mark', contact_history[nickname].get_end_iter(), False)
-    history_textview[nickname].scroll_to_mark(mark, 0.0, True, 1.0, 1.0)
 
     stack.add_titled(scrolled_window, nickname, nickname)
 
