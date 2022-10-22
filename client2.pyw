@@ -123,7 +123,9 @@ def history_append(s, nickname):
     message_buffer.set_text('')
     if nickname == SERVER:
         nickname = DIAG
-    contact_history[nickname].insert(contact_history[nickname].get_bounds()[1], s)
+    contact_history[nickname].insert(contact_history[nickname].get_end_iter(), s)
+    mark = contact_history[nickname].create_mark('end_mark', contact_history[nickname].get_end_iter(), False)
+    history_textview[nickname].scroll_to_mark(mark, 0.0, True, 1.0, 1.0)
     with open(f'history_{NICKNAME}/{nickname}.txt', mode='a') as f:
         f.write(s)
 
@@ -131,6 +133,7 @@ def history_append(s, nickname):
 sock = None
 connected = False
 contact_history = {}
+history_textview = {}
 
 """GUI init"""
 window = Gtk.Window()
@@ -201,16 +204,19 @@ for nickname in (DIAG, *contact_pubkey.keys()):
     except FileNotFoundError:
         contact_history[nickname].set_text('')
 
-    history_textview = Gtk.TextView(buffer=contact_history[nickname])
-    history_textview.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
-    history_textview.set_editable(False)
-    history_textview.set_cursor_visible(False)
-    history_textview.set_border_width(3)
-    history_textview.set_can_focus(False)
+    history_textview[nickname] = Gtk.TextView(buffer=contact_history[nickname])
+    history_textview[nickname].set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+    history_textview[nickname].set_editable(False)
+    history_textview[nickname].set_cursor_visible(False)
+    history_textview[nickname].set_border_width(3)
+    history_textview[nickname].set_can_focus(False)
 
     scrolled_window = Gtk.ScrolledWindow()
     scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-    scrolled_window.add(history_textview)
+    scrolled_window.add(history_textview[nickname])
+
+    mark = contact_history[nickname].create_mark('end_mark', contact_history[nickname].get_end_iter(), False)
+    history_textview[nickname].scroll_to_mark(mark, 0.0, True, 1.0, 1.0)
 
     stack.add_titled(scrolled_window, nickname, nickname)
 
