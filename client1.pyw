@@ -7,7 +7,7 @@ import sys
 from funcs import dt_now, load_keys, send_encrypted, encrypt, decrypt, sign, verify, send, receive
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, GLib
 
 HOST = '127.0.0.1'
 PORT = 9999
@@ -136,6 +136,12 @@ def window_show(obj):
     pass
 
 
+def after_window_show():
+    for nickname in (DIAG, *contact_pubkey.keys()):
+        mark = contact_history[nickname].create_mark(None, contact_history[nickname].get_end_iter(), False)
+        history_textview[nickname].scroll_to_mark(mark, 0.0, True, 1.0, 1.0)
+
+
 sock = None
 connected = False
 contact_history = {}
@@ -218,9 +224,6 @@ for nickname in (DIAG, *contact_pubkey.keys()):
     history_textview[nickname].set_border_width(3)
     history_textview[nickname].set_can_focus(False)
 
-    mark = contact_history[nickname].create_mark(None, contact_history[nickname].get_end_iter(), False)
-    history_textview[nickname].scroll_to_mark(mark, 0.0, True, 1.0, 1.0)
-
     scrolled_window = Gtk.ScrolledWindow()
     scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
     scrolled_window.add(history_textview[nickname])
@@ -235,4 +238,5 @@ history_append(f'{dt_now()} LOADING KEYS...OK\n', DIAG)
 connect_button_clicked()
 message_textview.grab_focus()
 window.show_all()
+GLib.idle_add(after_window_show)
 Gtk.main()
