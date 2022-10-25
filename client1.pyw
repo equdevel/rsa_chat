@@ -26,6 +26,7 @@ def receive_data():
             history_append(f'{dt_now()} DISCONNECTED: {error.strerror}\n', DIAG)
             header_bar.props.subtitle = 'DISCONNECTED'
             connected = False
+            sock.shutdown(socket.SHUT_RDWR)
             sock.close()
             break
         else:
@@ -50,6 +51,7 @@ def connect_button_clicked(obj=None):
             history_append(f'{dt_now()} NOT CONNECTED: {error.strerror}\n', DIAG)
             header_bar.props.subtitle = 'NOT CONNECTED'
             connected = False
+            sock.shutdown(socket.SHUT_RDWR)
             sock.close()
         else:
             send_encrypted(sock, NICKNAME, server_pubkey)
@@ -61,6 +63,7 @@ def connect_button_clicked(obj=None):
                 header_bar.props.subtitle = 'CONNECTED'
             else:
                 connected = False
+                sock.shutdown(socket.SHUT_RDWR)
                 sock.close()
 
 
@@ -71,6 +74,7 @@ def disconnect_button_clicked(obj=None):
         history_append(f'{dt_now()} /exit\n', DIAG)
         message_buffer.set_text('')
         connected = False
+        sock.shutdown(socket.SHUT_RDWR)
         sock.close()
 
 

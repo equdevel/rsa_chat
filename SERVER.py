@@ -19,6 +19,7 @@ def forward_data(sender_nickname):
         try:
             data = receive(sender_socket)
         except (ConnectionResetError, ConnectionAbortedError) as error:
+            sender_socket.shutdown(socket.SHUT_RDWR)
             sender_socket.close()
             del clients_online[sender_nickname]
             print(f'{dt_now()} <{sender_nickname}> DISCONNECTED: {error.strerror}')
@@ -28,6 +29,7 @@ def forward_data(sender_nickname):
             try:
                 receiver_nickname = decrypt(receiver_nickname, server_privkey)
             except DecryptionError as error:
+                sender_socket.shutdown(socket.SHUT_RDWR)
                 sender_socket.close()
                 del clients_online[sender_nickname]
                 print(f'{dt_now()} <{sender_nickname}> DISCONNECTED: {error}')
@@ -88,6 +90,7 @@ while True:
     try:
         client_socket, client_address = server_socket.accept()
     except KeyboardInterrupt:
+        server_socket.shutdown(socket.SHUT_RDWR)
         server_socket.close()
         exit('\nStopping SERVER...')
     client_nickname = receive_encrypted(client_socket, server_privkey)
@@ -102,10 +105,12 @@ while True:
         else:
             message = f'ACCESS DENIED from {client_address}: <{client_nickname}> already connected'
             send(client_socket, message.encode('utf8'))
+            client_socket.shutdown(socket.SHUT_RDWR)
             client_socket.close()
             print(f'{dt_now()} {message}')
     else:
         message = f'ACCESS DENIED from {client_address}: <{client_nickname}> not registered'
         send(client_socket, message.encode('utf8'))
+        client_socket.shutdown(socket.SHUT_RDWR)
         client_socket.close()
         print(f'{dt_now()} {message}')
