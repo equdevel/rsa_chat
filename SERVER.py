@@ -4,6 +4,7 @@ import socket
 import _thread
 # from queue import Queue
 import redis
+from rsa import DecryptionError
 from funcs import dt_now, load_keys, receive_encrypted, encrypt, decrypt, sign, verify, send, receive
 
 HOST = '0.0.0.0'
@@ -24,7 +25,13 @@ def forward_data(sender_nickname):
             break
         else:
             receiver_nickname = data[0:512]
-            receiver_nickname = decrypt(receiver_nickname, server_privkey)
+            try:
+                receiver_nickname = decrypt(receiver_nickname, server_privkey)
+            except DecryptionError as error:
+                sender_socket.close()
+                del clients_online[sender_nickname]
+                print(f'{dt_now()} <{sender_nickname}> DISCONNECTED: {error.strerror}')
+                break
             message = data[512:1024]
             signature = data[1024:1536]
             if verify(message, signature, client_pubkey[sender_nickname]):
