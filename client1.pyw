@@ -22,7 +22,7 @@ def receive_data():
     while connected:
         try:
             data = receive(sock)
-        except (ConnectionResetError, ConnectionAbortedError) as error:
+        except (ConnectionResetError, ConnectionAbortedError, OSError) as error:
             history_append(f'{dt_now()} DISCONNECTED: {error.strerror}\n', DIAG)
             header_bar.props.subtitle = 'DISCONNECTED'
             connected = False
