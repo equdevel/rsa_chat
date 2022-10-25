@@ -19,7 +19,7 @@ DIAG = 'DIAG'
 def receive_data():
     """Receive, verify signature and decrypt messages from server"""
     global connected
-    while True:
+    while connected:
         try:
             data = receive(sock)
         except (ConnectionResetError, ConnectionAbortedError) as error:
