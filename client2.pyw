@@ -76,8 +76,6 @@ def disconnect_button_clicked(obj=None):
 
 def settings_button_clicked(obj=None):
     message_textview.grab_focus()
-    mark = contact_history[OPPONENT_NICKNAME].create_mark(None, contact_history[OPPONENT_NICKNAME].get_end_iter(), False)
-    history_textview[OPPONENT_NICKNAME].scroll_to_mark(mark, 0.0, True, 1.0, 1.0)
 
 
 def send_button_clicked(obj=None):
@@ -137,9 +135,10 @@ def window_show(obj):
 
 
 def after_window_show():
-    for nickname in (DIAG, *contact_pubkey.keys()):
-        mark = contact_history[nickname].create_mark(None, contact_history[nickname].get_end_iter(), False)
-        history_textview[nickname].scroll_to_mark(mark, 0.0, True, 1.0, 1.0)
+    """Scroll all history TextViews to end"""
+    for text_buffer, text_view in zip(contact_history.values(), history_textview.values()):
+        mark = text_buffer.create_mark(None, text_buffer.get_end_iter(), False)
+        text_view.scroll_to_mark(mark, 0.0, True, 1.0, 1.0)
 
 
 sock = None
