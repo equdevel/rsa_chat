@@ -72,6 +72,7 @@ server_privkey, client_pubkey = load_keys('SERVER')
 #     message_queue[nickname] = Queue(maxsize=0)
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # option that allow immediately restart server
 server_socket.bind((HOST, PORT))
 server_socket.listen(5)
 print(f'{dt_now()} SERVING ON {HOST}:{PORT}...')
