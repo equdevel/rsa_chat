@@ -30,7 +30,7 @@ def forward_data(sender_nickname):
             except DecryptionError as error:
                 sender_socket.close()
                 del clients_online[sender_nickname]
-                print(f'{dt_now()} <{sender_nickname}> DISCONNECTED: {error.strerror}')
+                print(f'{dt_now()} <{sender_nickname}> DISCONNECTED: {error}')
                 break
             message = data[512:1024]
             signature = data[1024:1536]
